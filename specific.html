@@ -9,44 +9,35 @@
     * { margin: 0; box-sizing: border-box; }
     
     html, body {
-        /* ⭐️⭐️⭐️ 최종 방어: 뷰포트 완전 고정 (가장 중요) ⭐️⭐️⭐️ */
+        /* ⭐️⭐️⭐️ 최종 방어: 뷰포트 완전 고정 (유지) ⭐️⭐️⭐️ */
         height: 100% !important; 
         width: 100% !important;
-        
-        /* 브라우저 스크롤 레이어와 DOM 분리 */
         position: fixed; 
         top: 0;
         left: 0;
-        
-        /* 오버스크롤 및 수직 스크롤 완벽 봉쇄 */
         overscroll-behavior: none !important;
         overflow: hidden !important;         
     }
 
-    /* ⭐️ 슬라이드 컨테이너: JS가 제어할 순수한 영역 ⭐️ */
+    /* ⭐️ 슬라이드 컨테이너 (유지) ⭐️ */
     .swiper {
         width: 100vw;
         height: 100vh;
         min-height: 100svh;
         background-color: black;
-        
-        /* 순수 JS 제어를 위해 모든 스크롤/터치 관련 CSS 제거 */
         overflow: hidden !important; 
-        
-        /* JS 터치 핸들러와 함께 최강의 방어 */
         touch-action: none !important; 
     }
     
-    /* ⭐️ 슬라이드 래퍼: JS가 transform을 적용할 대상 ⭐️ */
+    /* ⭐️ 슬라이드 래퍼 (유지) ⭐️ */
     .swiper-wrapper {
         display: flex; 
         height: 100%; 
         width: max-content; 
-        /* JS 트랜지션을 위한 속성 추가 */
         transition: transform 0.3s ease-out; 
     }
     
-    /* ⭐️ 개별 슬라이드: 100vw 강제 고정 ⭐️ */
+    /* ⭐️ 개별 슬라이드 (유지) ⭐️ */
     .swiper-slide {
         width: 100vw; 
         height: 100%; 
@@ -61,7 +52,6 @@
         width: 100%;
         height: 100%;
         object-fit: contain;
-        /* 드래그, 긴눌림 메뉴 방지 (유지) */
         -webkit-user-drag: none;
         user-select: none;
     }
@@ -111,7 +101,7 @@
         return urlParams.get('date'); 
     }
 
-    /** 파일명 문자열을 분석하여 데이터 객체로 변환하는 함수 */
+    /** 파일명 문자열을 분석하여 데이터 객체로 변환하는 함수 (유지) */
     function parseFilename(filename) {
         if (typeof filename !== 'string' || filename.length === 0) {
             console.error("파일명 데이터가 유효하지 않습니다:", filename);
@@ -162,7 +152,7 @@
             if (data) {
                 const isVideo = filename.toLowerCase().endsWith('.webm') || filename.toLowerCase().endsWith('.mp4');
                 const resourceType = isVideo ? 'video' : 'image'; 
-                const imagePath = `${CLOUDINARY_BASE_URL}${resourceType}/upload/${filename}`; 
+                const dataPath = `${CLOUDINARY_BASE_URL}${resourceType}/upload/${filename}`; // 실제 src 대신 data-src로 사용
                 
                 let mediaTag;
 
@@ -170,15 +160,16 @@
                     const posterFilename = filename.replace(/\.[^/.]+$/, '.jpg'); 
                     const posterPath = `${CLOUDINARY_BASE_URL}video/upload/f_jpg/${posterFilename}`;
                     
+                    // 🔥🔥🔥 비디오: src 대신 data-src 사용 🔥🔥🔥
                     mediaTag = `
                         <video 
-                            src="${imagePath}"  
+                            data-src="${dataPath}"  
+                            data-poster="${posterPath}"
                             controls  
                             muted  
                             loop 
                             preload="metadata" 
                             playsinline
-                            poster="${posterPath}"
                             aria-label="${data.date} - ${data.locationSubcategory}"
                             style="width: 100%; height: 100%; object-fit: contain;"
                         >
@@ -186,8 +177,9 @@
                         </video>
                     `;
                 } else {
+                    // 🔥🔥🔥 이미지: src 대신 data-src 사용 🔥🔥🔥
                     mediaTag = `
-                        <img src="${imagePath}"  
+                        <img data-src="${dataPath}"  
                              alt="${data.date} - ${data.locationSubcategory}"
                              style="width: 100%; height: 100%; object-fit: contain;">
                     `;
@@ -219,77 +211,101 @@
     // [3] JS 슬라이드 핵심 로직
     // ----------------------------------------------------
     
-    // transform CSS 업데이트 함수
+    // transform CSS 업데이트 함수 (유지)
     function setWrapperTranslate(x) {
         if(wrapper) {
             wrapper.style.transform = `translateX(${x}px)`;
         }
     }
-
-    // 슬라이드 이동 (터치 종료 시 스냅)
-    function snapToSlide(draggedDistance) {
-        // 목표 인덱스 계산
-        const threshold = 0.25; // 화면 폭의 25% 이상 움직여야 슬라이드 인정
-        const slideWidth = wrapper.offsetWidth / slideCount;
-        
-        // 🔥🔥🔥 스와이프 방향 논리 수정 🔥🔥🔥
-        // draggedDistance = startX - endX; (양수: R->L, 음수: L->R)
-        
-        if (Math.abs(draggedDistance) > slideWidth * threshold) {
-            if (draggedDistance > 0 && currentIndex < slideCount - 1) { // R->L 드래그 (양수) -> 다음 슬라이드
-                currentIndex++; 
-            } else if (draggedDistance < 0 && currentIndex > 0) { // L->R 드래그 (음수) -> 이전 슬라이드
-                currentIndex--; 
-            }
-        }
-        
-        // 최종 위치 계산 및 이동
-        currentTranslate = -currentIndex * slideWidth;
-        setWrapperTranslate(currentTranslate);
-        
-        // ⭐️ 미디어 재생/정지 수동 처리 ⭐️
-        handleMediaPlayback();
-    }
     
-    // 비디오/미디어 재생 및 정지 수동 처리
-    function handleMediaPlayback() {
+    /** 지정된 슬라이드의 미디어(img/video)를 로드합니다. */
+    function loadMedia(slideElement) {
+        const media = slideElement.querySelector('img, video');
+        if (!media) return;
+
+        // data-src가 있고 아직 src가 설정되지 않았을 때만 로드 시작
+        if (media.getAttribute('data-src') && !media.hasAttribute('src')) {
+            const dataSrc = media.getAttribute('data-src');
+            
+            // Image or Video src setting
+            media.setAttribute('src', dataSrc);
+            
+            // Video poster setting
+            if (media.tagName === 'VIDEO' && media.hasAttribute('data-poster')) {
+                media.setAttribute('poster', media.getAttribute('data-poster'));
+            }
+            
+            // 로드되었음을 표시하기 위해 data 속성 제거
+            media.removeAttribute('data-src');
+            media.removeAttribute('data-poster');
+        }
+    }
+
+
+    /** 주변 슬라이드의 미디어를 로드하고 비디오 재생 상태를 업데이트합니다. */
+    function updateMediaState() {
         const slides = wrapper.querySelectorAll('.swiper-slide');
+        
         slides.forEach((slide, index) => {
             const video = slide.querySelector('video');
+            const isCurrent = index === currentIndex;
+            // 🔥🔥🔥 현재 슬라이드 및 주변 2개 슬라이드까지 로드 🔥🔥🔥
+            const isNeighbor = Math.abs(index - currentIndex) <= 2; 
+            
+            // 1. 미디어 로딩 (지연 로딩)
+            if (isNeighbor) {
+                loadMedia(slide); // 현재 슬라이드와 주변 슬라이드의 src를 설정하여 로드 시작
+            }
+
+            // 2. 재생/정지 처리 (현재 슬라이드만)
             if (video) {
-                if (index === currentIndex) {
-                    // 현재 슬라이드의 비디오 재생
+                if (isCurrent) {
+                    // video.load()는 src를 설정한 후 호출되어야 미디어가 준비됨
                     video.load(); 
-                    video.play().catch(e => console.log("Manual Video Play Error:", e));
+                    video.play().catch(e => console.log("Video Play Error (Index:", index, "):", e));
                 } else {
-                    // 다른 슬라이드의 비디오 정지
                     video.pause();
                 }
             }
         });
     }
 
+    // 슬라이드 이동 (터치 종료 시 스냅) (수정)
+    function snapToSlide(draggedDistance) {
+        // 목표 인덱스 계산 (유지)
+        const threshold = 0.25; 
+        const slideWidth = wrapper.offsetWidth / slideCount;
+        
+        if (Math.abs(draggedDistance) > slideWidth * threshold) {
+            if (draggedDistance > 0 && currentIndex < slideCount - 1) { 
+                currentIndex++; 
+            } else if (draggedDistance < 0 && currentIndex > 0) { 
+                currentIndex--; 
+            }
+        }
+        
+        // 최종 위치 계산 및 이동 (유지)
+        currentTranslate = -currentIndex * slideWidth;
+        setWrapperTranslate(currentTranslate);
+        
+        // 🔥🔥🔥 미디어 로드 및 재생 상태 업데이트 호출 🔥🔥🔥
+        updateMediaState(); 
+    }
+    
     // ----------------------------------------------------
-    // [4] 순수 JavaScript 터치 핸들러 (새로고침 최종 차단)
+    // [4] 순수 JavaScript 터치 핸들러 (유지)
     // ----------------------------------------------------
     
     function handleTouchStart(e) {
-        // 🔥🔥🔥 가장 중요: 터치 시작 시 브라우저 동작 강제 차단 🔥🔥🔥
         e.preventDefault(); 
-        
         startX = e.touches[0].clientX;
         isDragging = true;
-        
-        // 트랜지션 효과 잠시 제거 (드래그 중 부드럽게 움직이도록)
         wrapper.style.transition = 'none';
     }
 
     function handleTouchMove(e) {
         if (!isDragging) return;
-        
-        // 🔥🔥🔥 가장 중요: 이동 중에도 브라우저 동작 강제 차단 🔥🔥🔥
         e.preventDefault(); 
-        
         const deltaX = e.touches[0].clientX - startX;
         setWrapperTranslate(currentTranslate + deltaX);
     }
@@ -298,14 +314,11 @@
         if (!isDragging) return;
         
         isDragging = false;
-        
-        // 드래그 종료 후 다시 트랜지션 효과 추가 (스냅 시 부드럽게)
         wrapper.style.transition = 'transform 0.3s ease-out';
         
         const endX = e.changedTouches[0].clientX;
-        const draggedDistance = startX - endX; // 양수: 오른쪽에서 왼쪽 (다음 슬라이드 방향)
+        const draggedDistance = startX - endX; 
         
-        // 최종적으로 슬라이드 위치를 계산하고 이동 (스냅)
         snapToSlide(draggedDistance);
     }
 
@@ -318,13 +331,12 @@
         
         wrapper = document.getElementById('swiper-wrapper-id');
         
-        // 🔥🔥🔥 { passive: false }를 사용하여 터치 이벤트 제어권 강제 확보 🔥🔥🔥
-        // 이 코드가 새로고침 방지의 핵심입니다.
+        // 터치 핸들러 설정 (유지)
         wrapper.addEventListener('touchstart', handleTouchStart, { passive: false });
         wrapper.addEventListener('touchmove', handleTouchMove, { passive: false });
         wrapper.addEventListener('touchend', handleTouchEnd);
         
-        const loadingIndicator = wrapper; // 로딩 인디케이터로 wrapper 재사용
+        const loadingIndicator = wrapper; 
         loadingIndicator.innerHTML = `
             <div class="swiper-slide" style="color:white; font-size: 20px; display:flex; justify-content:center; align-items:center;">
                 <p>데이터 로딩 중...</p>
@@ -361,8 +373,8 @@
                         currentTranslate = -currentIndex * slideWidth;
                         setWrapperTranslate(currentTranslate);
                         
-                        // 초기 비디오 재생
-                        handleMediaPlayback();
+                        // 🔥🔥🔥 초기 미디어 로드 및 재생 상태 업데이트 호출 🔥🔥🔥
+                        updateMediaState(); 
                     });
                     
                 } else {
