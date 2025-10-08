@@ -9,10 +9,11 @@
 
     <style>
         html,
-        body {
-            position: relative;
-            height: 100%;
-        }
+    body {
+        position: relative;
+        /* height: 100%; 대신 height: 100vh를 사용하여 모바일 뷰포트 높이를 명확히 지정 */
+        height: 100vh; 
+    }
 
         body {
             background: #000;
@@ -79,26 +80,38 @@
         // [2] 함수 정의 영역
         // ----------------------------------------------------
 
+        // ... (이전 코드 생략)
+
         /** Swiper 라이브러리를 초기화하는 함수 */
         function initializeSwiper() {
             if (globalSwiper) {
                 globalSwiper.destroy(true, true);
             }
 
-            globalSwiper = new Swiper(".mySwiper", { // HTML의 .mySwiper 클래스 사용
+            globalSwiper = new Swiper(".mySwiper", { 
                 loop: false,
                 slidesPerView: 1,
                 spaceBetween: 0,
 
-                // 모바일 스와이프 충돌 방지를 위한 설정 (이전에 문제 해결에 도움을 줬던 설정)
-                allowTouchMove: true,
+                // ⭐️⭐️⭐️ 모바일 스와이프 충돌 방지 핵심 옵션 ⭐️⭐️⭐️
+                
+                // 1. 수직 스와이프 무시: 스와이프 방향이 수직일 경우 스와이프를 막음
+                // (모바일의 세로 스크롤 및 새로고침 동작을 차단하는 데 도움을 줌)
+                threshold: 10, 
+                
+                // 2. 이벤트 전파 중단: 터치 이벤트가 브라우저의 기본 동작으로 전달되는 것을 막음
                 touchMoveStopPropagation: true,
-                resistance: false,
+                
+                // 3. 네이티브 스크롤 방지: Swiper 영역에서 수직 스크롤을 시도할 때 브라우저의 기본 스크롤을 막음
+                nested: true, // Swiper 안에 다른 스와이퍼가 있음을 나타내지만, 터치 이벤트 처리에 도움을 줌
+                simulateTouch: true, // 터치 시뮬레이션 활성화
+                touchStartPreventDefault: true, // 터치 시작 시 브라우저의 기본 동작(스크롤)을 막음
 
-                // 페이지네이션 및 네비게이션이 필요한 경우 여기에 추가
+                // ⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️
 
             });
         }
+// ... (이후 코드 생략)
 
         /** 파일명 문자열을 분석하는 함수 (간단 버전) */
         function parseFilename(filename) {
