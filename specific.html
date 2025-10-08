@@ -61,7 +61,7 @@
         position: fixed;
         top:0;
         left: 0;
-        display: none; 
+        display: none; /* JS로 제어됨: 평소 숨김 */
         padding: 10px;
         background-color: rgba(0, 0, 0, 0.5);
         z-index: 10;
@@ -90,12 +90,15 @@
     let slideCount = 0;
     
     let wrapper = null; 
+    
+    // ⭐️⭐️⭐️ 새로운 변수: 터치(탭)로 간주할 최대 이동 거리 (픽셀) ⭐️⭐️⭐️
+    const TAP_THRESHOLD = 10; 
 
     // ----------------------------------------------------
     // [2] 유틸리티 함수
     // ----------------------------------------------------
 
-    /** URL에서 'date' 쿼리 파라미터를 추출하는 함수 */
+    /** URL에서 'date' 쿼리 파라미터를 추출하는 함수 (유지) */
     function getInitialDateFromUrl() {
         const urlParams = new URLSearchParams(window.location.search);
         return urlParams.get('date'); 
@@ -104,13 +107,11 @@
     /** 파일명 문자열을 분석하여 데이터 객체로 변환하는 함수 (유지) */
     function parseFilename(filename) {
         if (typeof filename !== 'string' || filename.length === 0) {
-            console.error("파일명 데이터가 유효하지 않습니다:", filename);
             return null;
         }
         const basename = filename.substring(0, filename.lastIndexOf('.'));
         const parts = basename.split('_');
         if (parts.length < 5) {
-            console.error("파일명 형식이 올바르지 않습니다:", filename);
             return null;
         }
         const [datePart, timePart, locationPart, peoplePart, actionPart] = parts;
@@ -142,7 +143,7 @@
         };
     }
 
-    /** 파일 목록을 기반으로 슬라이드 HTML을 생성하고 삽입하는 함수 */
+    /** 파일 목록을 기반으로 슬라이드 HTML을 생성하고 삽입하는 함수 (유지) */
     function generateSwiperSlides(filenames) {
         let swiperSlidesHTML = '';
 
@@ -152,7 +153,7 @@
             if (data) {
                 const isVideo = filename.toLowerCase().endsWith('.webm') || filename.toLowerCase().endsWith('.mp4');
                 const resourceType = isVideo ? 'video' : 'image'; 
-                const dataPath = `${CLOUDINARY_BASE_URL}${resourceType}/upload/${filename}`; // 실제 src 대신 data-src로 사용
+                const dataPath = `${CLOUDINARY_BASE_URL}${resourceType}/upload/${filename}`; 
                 
                 let mediaTag;
 
@@ -160,24 +161,22 @@
                     const posterFilename = filename.replace(/\.[^/.]+$/, '.jpg'); 
                     const posterPath = `${CLOUDINARY_BASE_URL}video/upload/f_jpg/${posterFilename}`;
                     
-                    // 🔥🔥🔥 비디오: src 대신 data-src 사용 🔥🔥🔥
                     mediaTag = `
                         <video 
                             data-src="${dataPath}"  
                             data-poster="${posterPath}"
-                            controls  
                             muted  
                             loop 
                             preload="metadata" 
                             playsinline
                             aria-label="${data.date} - ${data.locationSubcategory}"
                             style="width: 100%; height: 100%; object-fit: contain;"
+                            class="video-media"
                         >
                             Your browser does not support the video tag.
                         </video>
                     `;
                 } else {
-                    // 🔥🔥🔥 이미지: src 대신 data-src 사용 🔥🔥🔥
                     mediaTag = `
                         <img data-src="${dataPath}"  
                              alt="${data.date} - ${data.locationSubcategory}"
@@ -208,7 +207,7 @@
 
 
     // ----------------------------------------------------
-    // [3] JS 슬라이드 핵심 로직
+    // [3] JS 슬라이드 핵심 로직 및 비디오 제어
     // ----------------------------------------------------
     
     // transform CSS 업데이트 함수 (유지)
@@ -218,24 +217,38 @@
         }
     }
     
-    /** 지정된 슬라이드의 미디어(img/video)를 로드합니다. */
+    /** 비디오 터치 시 Controls와 오버레이를 토글합니다. (유지) */
+    function toggleVideoControls(slideElement) {
+        const video = slideElement.querySelector('video');
+        const overlay = slideElement.querySelector('.info-overlay');
+        
+        if (!video) return;
+
+        // Controls 토글
+        const hasControls = video.hasAttribute('controls');
+        if (hasControls) {
+            video.removeAttribute('controls');
+            overlay.style.display = 'none';
+        } else {
+            video.setAttribute('controls', '');
+            overlay.style.display = 'block';
+        }
+    }
+
+    /** 지정된 슬라이드의 미디어(img/video)를 로드합니다. (유지) */
     function loadMedia(slideElement) {
         const media = slideElement.querySelector('img, video');
         if (!media) return;
 
-        // data-src가 있고 아직 src가 설정되지 않았을 때만 로드 시작
-        if (media.getAttribute('data-src') && !media.hasAttribute('src')) {
+        if ((media.tagName === 'VIDEO' || media.tagName === 'IMG') && media.getAttribute('data-src') && !media.hasAttribute('src')) {
             const dataSrc = media.getAttribute('data-src');
             
-            // Image or Video src setting
             media.setAttribute('src', dataSrc);
             
-            // Video poster setting
             if (media.tagName === 'VIDEO' && media.hasAttribute('data-poster')) {
                 media.setAttribute('poster', media.getAttribute('data-poster'));
             }
             
-            // 로드되었음을 표시하기 위해 data 속성 제거
             media.removeAttribute('data-src');
             media.removeAttribute('data-poster');
         }
@@ -249,33 +262,41 @@
         slides.forEach((slide, index) => {
             const video = slide.querySelector('video');
             const isCurrent = index === currentIndex;
-            // 🔥🔥🔥 현재 슬라이드 및 주변 2개 슬라이드까지 로드 🔥🔥🔥
+            
+            // 현재 슬라이드 및 주변 2개 슬라이드까지 로드 (유지)
             const isNeighbor = Math.abs(index - currentIndex) <= 2; 
             
             // 1. 미디어 로딩 (지연 로딩)
             if (isNeighbor) {
-                loadMedia(slide); // 현재 슬라이드와 주변 슬라이드의 src를 설정하여 로드 시작
+                loadMedia(slide); 
             }
 
-            // 2. 재생/정지 처리 (현재 슬라이드만)
+            // 2. 재생/정지 및 UI 처리
             if (video) {
                 if (isCurrent) {
                     // video.load()는 src를 설정한 후 호출되어야 미디어가 준비됨
                     video.load(); 
+                    
+                    // 스와이프 후 자동 재생 및 UI 숨김
                     video.play().catch(e => console.log("Video Play Error (Index:", index, "):", e));
+                    video.removeAttribute('controls'); 
+                    slide.querySelector('.info-overlay').style.display = 'none'; 
+
                 } else {
                     video.pause();
+                    video.removeAttribute('controls'); 
+                    slide.querySelector('.info-overlay').style.display = 'none';
                 }
             }
         });
     }
 
-    // 슬라이드 이동 (터치 종료 시 스냅) (수정)
+    // 슬라이드 이동 (터치 종료 시 스냅) (유지)
     function snapToSlide(draggedDistance) {
-        // 목표 인덱스 계산 (유지)
         const threshold = 0.25; 
         const slideWidth = wrapper.offsetWidth / slideCount;
         
+        // 이동할 인덱스 계산
         if (Math.abs(draggedDistance) > slideWidth * threshold) {
             if (draggedDistance > 0 && currentIndex < slideCount - 1) { 
                 currentIndex++; 
@@ -284,20 +305,17 @@
             }
         }
         
-        // 최종 위치 계산 및 이동 (유지)
         currentTranslate = -currentIndex * slideWidth;
         setWrapperTranslate(currentTranslate);
         
-        // 🔥🔥🔥 미디어 로드 및 재생 상태 업데이트 호출 🔥🔥🔥
         updateMediaState(); 
     }
     
     // ----------------------------------------------------
-    // [4] 순수 JavaScript 터치 핸들러 (유지)
+    // [4] 순수 JavaScript 터치 핸들러 (수정)
     // ----------------------------------------------------
     
     function handleTouchStart(e) {
-        e.preventDefault(); 
         startX = e.touches[0].clientX;
         isDragging = true;
         wrapper.style.transition = 'none';
@@ -305,7 +323,6 @@
 
     function handleTouchMove(e) {
         if (!isDragging) return;
-        e.preventDefault(); 
         const deltaX = e.touches[0].clientX - startX;
         setWrapperTranslate(currentTranslate + deltaX);
     }
@@ -319,6 +336,16 @@
         const endX = e.changedTouches[0].clientX;
         const draggedDistance = startX - endX; 
         
+        // 🔥🔥 핵심 수정: 드래그 거리가 TAP_THRESHOLD 이하이면 슬라이드 이동 로직을 건너뜁니다. 🔥🔥
+        if (Math.abs(draggedDistance) < TAP_THRESHOLD) {
+             // 탭으로 인식: 슬라이드 이동(snapToSlide) 대신 비디오 UI 토글은 click 이벤트가 처리합니다.
+             // 아무 작업도 하지 않고 리턴하여 슬라이드 위치를 고정합니다.
+             currentTranslate = -currentIndex * wrapper.offsetWidth / slideCount;
+             setWrapperTranslate(currentTranslate);
+             return; 
+        }
+
+        // 드래그로 인식: 슬라이드 이동 로직 실행
         snapToSlide(draggedDistance);
     }
 
@@ -366,14 +393,28 @@
                             currentIndex = firstMatchingIndex;
                         }
                     }
+
+                    // 3. 모든 비디오 요소에 터치(클릭) 리스너 추가 (유지)
+                    const slides = wrapper.querySelectorAll('.swiper-slide');
+                    slides.forEach(slide => {
+                        const video = slide.querySelector('video');
+                        if (video) {
+                            video.addEventListener('click', (e) => {
+                                // 드래그 로직과 충돌 방지
+                                e.stopPropagation(); 
+                                // 터치 시 UI 토글 실행
+                                toggleVideoControls(slide);
+                            });
+                        }
+                    });
                     
-                    // 초기 위치 계산 및 적용
+                    // 4. 초기 위치 계산 및 미디어 상태 업데이트
                     window.requestAnimationFrame(() => {
                         const slideWidth = wrapper.offsetWidth / slideCount; 
                         currentTranslate = -currentIndex * slideWidth;
                         setWrapperTranslate(currentTranslate);
                         
-                        // 🔥🔥🔥 초기 미디어 로드 및 재생 상태 업데이트 호출 🔥🔥🔥
+                        // 초기 미디어 로드 및 재생 상태 업데이트 호출
                         updateMediaState(); 
                     });
                     
