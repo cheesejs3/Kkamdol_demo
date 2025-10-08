@@ -84,14 +84,14 @@
     // ----------------------------------------------------
     // [1] 환경 설정 (Cloudinary 정보)
     // ----------------------------------------------------
-    const CLOUDINARY_CLOUD_NAME = 'dbmdkatry'; // ⭐️ 사용자의 Cloud Name
+    const CLOUDINARY_CLOUD_NAME = 'dbmdkatry';
     const CLOUDINARY_BASE_URL = `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/`;
     
     const JSON_FILE_PATH = 'photos.json'; 
     let globalSwiper = null; 
 
     // ----------------------------------------------------
-    // [2] 함수 정의 영역
+    // [2] 함수 정의 영역 (경로 처리 로직 수정) ⭐️⭐️⭐️
     // ----------------------------------------------------
 
     /** URL에서 'date' 쿼리 파라미터를 추출하는 함수 */
@@ -161,17 +161,12 @@
             touchMoveStopPropagation: true, 
             resistance: false,
 
-            // ⭐️ 비디오 재생/정지 이벤트 유지 ⭐️
             on: {
                 slideChangeTransitionStart: function () {
                     this.slides.forEach(slide => {
                         const video = slide.querySelector('video');
                         if (video) {
                             video.pause();
-                            // 비디오를 다시 시작 지점으로 되돌립니다.
-                            if (video.readyState >= 1) { // 메타데이터가 로드된 경우에만 currentTime을 설정합니다.
-                                video.currentTime = 0;
-                            }
                         }
                     });
                 },
@@ -179,17 +174,14 @@
                     const activeSlide = this.slides[this.activeIndex];
                     const video = activeSlide.querySelector('video');
                     if (video) {
-                        // 비디오 재생 시도 로직 (성공률 높임)
                         if (video.readyState >= 3) { 
                             video.play().catch(e => console.log("Video Play Error (Ready):", e));
                         } else {
-                            // 아직 로드되지 않았다면, canplay 이벤트가 발생하면 재생하도록 리스너를 붙임
                             video.addEventListener('canplay', function playOnce() {
                                 this.play().catch(e => console.log("Video Play Error (CanPlay):", e));
                                 this.removeEventListener('canplay', playOnce); 
-                            }, { once: true }); // 이벤트를 한 번만 실행하고 제거
+                            }, { once: true });
                             
-                            // ⭐️⭐️⭐️ 추가: 비디오 로딩이 시작되지 않은 경우 수동으로 로딩 시작 ⭐️⭐️⭐️
                             if (video.networkState === 0 /* NETWORK_EMPTY */ || video.networkState === 3 /* NETWORK_NO_SOURCE */) {
                                 video.load(); 
                             }
@@ -209,17 +201,19 @@
             const data = parseFilename(filename);
 
             if (data) {
-                const isVideo = filename.toLowerCase().endsWith('.webm');
+                // ⭐️⭐️⭐️ 파일 확장자에 따라 리소스 타입 동적 결정 ⭐️⭐️⭐️
+                const isVideo = filename.toLowerCase().endsWith('.webm') || filename.toLowerCase().endsWith('.mp4');
+                const resourceType = isVideo ? 'video' : 'image'; 
                 
-                const resourceType = isVideo ? 'video' : 'image';
                 const imagePath = `${CLOUDINARY_BASE_URL}${resourceType}/upload/${filename}?cb=1`; 
                 
                 let mediaTag;
 
                 if (isVideo) {
-                    const posterPath = `${CLOUDINARY_BASE_URL}video/upload/${filename.replace('.webm', '.jpg')}`;
+                    // 비디오 파일의 확장자를 제거하고 JPG로 포스터 요청
+                    const posterFilename = filename.replace(/\.[^/.]+$/, '.jpg'); 
+                    const posterPath = `${CLOUDINARY_BASE_URL}video/upload/f_jpg/${posterFilename}`;
                     
-                    // ⭐️⭐️⭐️ 수정: preload="auto" 속성 제거 ⭐️⭐️⭐️
                     mediaTag = `
                         <video src="${imagePath}"  
                                 alt="${data.date} - ${data.locationSubcategory}" 
@@ -233,7 +227,7 @@
                         </video>
                     `;
                 } else {
-                    // 이미지 태그
+                    // 이미지 태그 (image/upload 경로 사용)
                     mediaTag = `
                         <img src="${imagePath}"  
                              alt="${data.date} - ${data.locationSubcategory}"
@@ -304,7 +298,6 @@
                     // 2. Swiper 초기화
                     initializeSwiper(initialIndex);
                     
-                    // ⭐️ Swiper 업데이트 명령만 유지
                     if (globalSwiper) {
                         globalSwiper.update(); 
                     }
