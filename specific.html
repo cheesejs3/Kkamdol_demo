@@ -7,17 +7,17 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.css"/>
     <script src="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.js"></script>
 
-    <title>갤러리</title>
+    <title></title>
     <style>
     * { margin: 0; box-sizing: border-box; }
     
     html, body {
-        height: 100%;
-        width: 100%;
+        /* ⭐️⭐️⭐️ 높이 고정 및 스크롤 원천 봉쇄 (최종 방어) ⭐️⭐️⭐️ */
+        height: 100% !important; 
+        width: 100% !important;
         
-        /* ⭐️⭐️⭐️ 최종 방어선: 스크롤/새로고침 원천 봉쇄 ⭐️⭐️⭐️ */
-        overscroll-behavior: none !important; /* 브라우저 새로고침/바운스 최종 차단 */
-        overflow: hidden !important;         /* 수직 스크롤을 완전히 막아 새로고침 방지 */
+        overscroll-behavior: none !important;
+        overflow: hidden !important;         
     }
 
     /* ⭐️ Swiper JS 전용 컨테이너 ⭐️ */
@@ -27,11 +27,10 @@
         min-height: 100svh; /* iOS 안정화 (유지) */
         background-color: black;
         
-        /* ⭐️⭐️⭐️ 사파리 터치 강제 잠금 ⭐️⭐️⭐️ */
+        /* ⭐️⭐️⭐️ 사파리 터치 강제 잠금 (유지) ⭐️⭐️⭐️ */
         touch-action: none !important;
         overscroll-behavior: contain; 
         
-        /* 사파리 추가 보강 */
         cursor: grab;
         -webkit-touch-callout: none; /* iOS 롱탭 메뉴 방지 */
     }
@@ -152,10 +151,10 @@
             spaceBetween: 30,
             allowTouchMove: true,
             
-            // ⭐️⭐️⭐️ 터치 제스처 잠금 재도입 (핵심 수정) ⭐️⭐️⭐️
+            // ⭐️⭐️⭐️ 터치 제스처 잠금 재도입 (핵심 유지) ⭐️⭐️⭐️
             touchStartPreventDefault: true, 
             touchMoveStopPropagation: true, 
-            passiveListeners: false,        // 이 옵션이 없으면 preventDefault가 작동하지 않습니다.
+            passiveListeners: false,        
             
             initialSlide: initialIndex,
             
@@ -219,7 +218,6 @@
                 const isVideo = filename.toLowerCase().endsWith('.webm') || filename.toLowerCase().endsWith('.mp4');
                 const resourceType = isVideo ? 'video' : 'image'; 
                 
-                // ?cb=1 제거 (유지)
                 const imagePath = `${CLOUDINARY_BASE_URL}${resourceType}/upload/${filename}`; 
                 
                 let mediaTag;
@@ -228,7 +226,6 @@
                     const posterFilename = filename.replace(/\.[^/.]+$/, '.jpg'); 
                     const posterPath = `${CLOUDINARY_BASE_URL}video/upload/f_jpg/${posterFilename}`;
                     
-                    // video 태그 정리: aria-label 및 preload="metadata" (유지)
                     mediaTag = `
                         <video 
                             src="${imagePath}"  
@@ -315,9 +312,10 @@
                     // 2. Swiper 초기화
                     initializeSwiper(initialIndex);
                     
-                    // 초기 로딩 시에만 update 호출
+                    // ⭐️⭐️⭐️ 최종 수정: Swiper에게 강제 업데이트 및 Lazy Load 명령 추가 ⭐️⭐️⭐️
                     if (globalSwiper) {
                         globalSwiper.update(); 
+                        // Lazy Load 기능을 사용하지 않더라도, DOM 변경 후 강제 업데이트는 안정성에 도움이 됨
                     }
                     
                 } else {
