@@ -11,12 +11,12 @@
     <style>
     *{margin:0}
     
-    /* ⭐️⭐️⭐️ 터치 안정화를 위한 높이 설정 강제 ⭐️⭐️⭐️ */
+    /* ⭐️⭐️⭐️ 모바일 새로고침 방지 핵심 CSS ⭐️⭐️⭐️ */
     html, body {
         height: 100%;
         width: 100%;
         overflow: hidden !important; 
-        overscroll-behavior: none !important; /* 새로고침 방지 */
+        overscroll-behavior: none !important; /* 브라우저 새로고침/바운스 방지 */
     }
     
     img, video {
@@ -29,10 +29,9 @@
         width:100vw;
         height: 100vh;
         background-color: black;
-        /* Swiper의 터치 액션을 수평으로 명시적으로 고정 */
-        touch-action: pan-x; 
+        /* 🔥 가장 강력한 설정: Swiper 영역에서 모든 브라우저 터치 기본 동작(스크롤)을 차단 */
+        touch-action: none !important; 
     }
-    /* 🔥 이 두 요소에 height: 100%를 명시하여 계산 오류 방지 */
     .swiper-wrapper{
         height: 100%; 
     }
@@ -40,7 +39,7 @@
         display: flex;
         align-items: center; 
         justify-content: center; 
-        height: 100%; /* vh 대신 100%를 사용하여 부모 wrapper 높이를 따르도록 강제 */
+        height: 100%; /* 100vh 대신 100%를 사용하여 높이 계산 오류 방지 */
     }
     
     .info-overlay{
@@ -54,6 +53,7 @@
         z-index: 10;
     }
 </style>
+
 </head>
 <body>
     <div class="swiper swiper-container">
@@ -147,12 +147,13 @@ function initializeSwiper(initialIndex = 0) {
         allowTouchMove: true,
         initialSlide: initialIndex,
         
-        // ⭐️⭐️⭐️ JS 설정 재확인 ⭐️⭐️⭐️
+        // ⭐️⭐️⭐️ 터치 안정화 최종 옵션 ⭐️⭐️⭐️
+        
         // 1. 터치 시작 시 브라우저의 기본 동작을 강제로 막음
         touchStartPreventDefault: true, 
 
-        // 2. CSS와 일치시키기 위해 pan-y 대신 pan-x 사용 (수직 스크롤을 완전히 포기)
-        touchAction: 'pan-x', 
+        // 2. CSS에서 touch-action: none을 설정했으므로, JS에서는 이 속성을 제거하여 충돌 방지
+        // touchAction: 'pan-y', 이 속성을 제거합니다. 👈👈👈
         
         // 3. 이벤트 전파 중지
         touchMoveStopPropagation: true, 
