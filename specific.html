@@ -11,10 +11,10 @@
     <style>
     * { margin: 0; box-sizing: border-box; }
     
-    /* ⭐️⭐️⭐️ 수정: 최소한의 높이/너비만 설정하고, Swiper가 스크롤 제어 ⭐️⭐️⭐️ */
     html, body {
         height: 100%;
         width: 100%;
+        /* 🔥 가장 중요: 브라우저가 페이지를 자연스럽게 제어하도록 허용 */
     }
 
     /* ⭐️ Swiper JS 전용 컨테이너 ⭐️ */
@@ -22,31 +22,30 @@
         width: 100vw;
         height: 100vh;
         background-color: black;
+        /* 이전에 제거했지만, 혹시 다른 곳에 남아있을 경우를 대비하여 다시 한번 확인 */
+        /* touch-action: none !important; 속성은 여기에 두지 않습니다. */
     }
     
-    /* ⭐️ 슬라이드 래퍼 ⭐️ */
+    /* ⭐️ 슬라이드 래퍼 및 개별 슬라이드 ⭐️ */
     .swiper-wrapper {
         display: flex; 
         height: 100%; 
     }
     
-    /* ⭐️ 개별 슬라이드 ⭐️ */
     .swiper-slide {
         width: 100vw; 
         height: 100%; 
-        
         display: flex;
         align-items: center; 
         justify-content: center;
         flex-shrink: 0; 
     }
     
+    /* 🔥 미디어 요소: touch-action 속성을 절대 사용하지 않습니다. */
     img, video {
         width: 100%;
         height: 100%;
         object-fit: contain;
-        /* 🔥 최종 수정: 이 충돌 속성을 제거했습니다. */
-        /* touch-action: none !important; */ 
     }
     
     .info-overlay{
@@ -79,7 +78,7 @@
     let globalSwiper = null; 
 
     // ----------------------------------------------------
-    // [2] 함수 정의 영역 (initializeSwiper 수정)
+    // [2] 함수 정의 영역
     // ----------------------------------------------------
 
     /** URL에서 'date' 쿼리 파라미터를 추출하는 함수 */
@@ -142,16 +141,19 @@
             allowTouchMove: true,
             initialSlide: initialIndex,
             
-            // ⭐️ 수정: 트랜지션 속도를 늦춰 미디어 로드 시간 확보 ⭐️
             speed: 800, 
             
             observer: true, 
             observeParents: true,
             
-            touchStartPreventDefault: true, 
-            touchMoveStopPropagation: true, 
             resistance: false,
 
+            // ⭐️⭐️⭐️ 수정: PC 마우스휠 스크롤 안정화 ⭐️⭐️⭐️
+            mousewheel: {
+                sensitivity: 1.0, // 기본 감도
+                eventsTarget: '.swiper' // 스와이퍼 컨테이너에서만 마우스휠 이벤트 처리
+            },
+            
             on: {
                 slideChangeTransitionStart: function () {
                     this.slides.forEach(slide => {
@@ -162,8 +164,7 @@
                     });
                 },
                 slideChangeTransitionEnd: function () {
-                    // ⭐️ 수정: 슬라이드가 바뀔 때마다 Swiper 뷰 강제 업데이트 ⭐️
-                    this.update(); 
+                    // 🔥 불필요한 this.update() 제거 (성능 개선)
                     
                     const activeSlide = this.slides[this.activeIndex];
                     const video = activeSlide.querySelector('video');
@@ -289,6 +290,7 @@
                     // 2. Swiper 초기화
                     initializeSwiper(initialIndex);
                     
+                    // 초기 로딩 시에만 update 호출
                     if (globalSwiper) {
                         globalSwiper.update(); 
                     }
