@@ -82,36 +82,45 @@
 
         // ... (이전 코드 생략)
 
-        /** Swiper 라이브러리를 초기화하는 함수 */
         function initializeSwiper() {
             if (globalSwiper) {
                 globalSwiper.destroy(true, true);
             }
-
+            
             globalSwiper = new Swiper(".mySwiper", { 
                 loop: false,
                 slidesPerView: 1,
                 spaceBetween: 0,
-
-                // ⭐️⭐️⭐️ 모바일 스와이프 충돌 방지 핵심 옵션 ⭐️⭐️⭐️
                 
-                // 1. 수직 스와이프 무시: 스와이프 방향이 수직일 경우 스와이프를 막음
-                // (모바일의 세로 스크롤 및 새로고침 동작을 차단하는 데 도움을 줌)
-                threshold: 10, 
+                // ⭐️⭐️⭐️ 모바일 충돌 방지 "최강 옵션" ⭐️⭐️⭐️
                 
-                // 2. 이벤트 전파 중단: 터치 이벤트가 브라우저의 기본 동작으로 전달되는 것을 막음
+                // 1. 터치 시작 시 브라우저의 기본 동작(새로고침, 스크롤) 무조건 차단
+                touchStartPreventDefault: true, 
+                
+                // 2. 터치 이벤트가 브라우저로 전파되는 것을 막아 새로고침 방지
                 touchMoveStopPropagation: true,
                 
-                // 3. 네이티브 스크롤 방지: Swiper 영역에서 수직 스크롤을 시도할 때 브라우저의 기본 스크롤을 막음
-                nested: true, // Swiper 안에 다른 스와이퍼가 있음을 나타내지만, 터치 이벤트 처리에 도움을 줌
-                simulateTouch: true, // 터치 시뮬레이션 활성화
-                touchStartPreventDefault: true, // 터치 시작 시 브라우저의 기본 동작(스크롤)을 막음
-
+                // 3. CSS 대신 JS로 수직 스크롤 허용 및 수평 스와이프 우선 처리 지시
+                touchAction: 'pan-y', // Swiper가 수직 스크롤(pan-y)을 허용하며, 수평은 Swiper가 처리함
+                
+                // 4. 스와이프 시 탄력(저항) 효과 제거
+                resistance: false,
+                
+                // 5. 버튼이 작동하도록 네비게이션 옵션 명시
+                navigation: {
+                    nextEl: '.swiper-button-next',
+                    prevEl: '.swiper-button-prev',
+                },
+                
                 // ⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️
 
+                // 페이지네이션 (선택 사항)
+                pagination: {
+                    el: '.swiper-pagination',
+                    clickable: true,
+                },
             });
         }
-// ... (이후 코드 생략)
 
         /** 파일명 문자열을 분석하는 함수 (간단 버전) */
         function parseFilename(filename) {
