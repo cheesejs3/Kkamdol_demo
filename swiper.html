@@ -2,75 +2,211 @@
 <html lang="en">
 
 <head>
-  <meta charset="utf-8" />
-  <title>Swiper demo</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1" />
-  <!-- Link Swiper's CSS -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <meta charset="utf-8" />
+    <title>Media Viewer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 
-  <!-- Demo styles -->
-  <style>
-    html,
-    body {
-      position: relative;
-      height: 100%;
-    }
+    <style>
+        html,
+        body {
+            position: relative;
+            height: 100%;
+        }
 
-    body {
-      background: #000;
-      font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
-      font-size: 14px;
-      color: #fff;
-      margin: 0;
-      padding: 0;
-    }
+        body {
+            background: #000;
+            font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+            font-size: 14px;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+        }
 
-    .swiper {
-      width: 100%;
-      height: 100%;
-    }
+        /* mySwiper 대신 .swiper를 사용하거나, HTML의 클래스 mySwiper를 .swiper로 변경해도 됨 */
+        .swiper { 
+            width: 100%;
+            height: 100%;
+        }
 
-    .swiper-slide {
-      text-align: center;
-      font-size: 18px;
-      background: #444;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
+        .swiper-slide {
+            text-align: center;
+            font-size: 18px;
+            background: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
-    .swiper-slide img {
-      display: block;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-  </style>
+        .swiper-slide img,
+        .swiper-slide video { /* 비디오가 .swiper-slide 내부에 올바르게 잡히도록 수정 */
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        /* 로딩 메시지가 중앙에 오도록 스타일 추가 */
+        .loading-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 20px;
+        }
+    </style>
 </head>
 
 <body>
-  <!-- Swiper -->
-  <div class="swiper mySwiper">
-    <div class="swiper-wrapper">
-      <div class="swiper-slide">Slide 1</div>
-      <div class="swiper-slide">Slide 2</div>
-      <div class="swiper-slide">Slide 3</div>
-      <div class="swiper-slide">Slide 4</div>
-      <div class="swiper-slide">Slide 5</div>
-      <div class="swiper-slide">Slide 6</div>
-      <div class="swiper-slide">Slide 7</div>
-      <div class="swiper-slide">Slide 8</div>
-      <div class="swiper-slide">Slide 9</div>
-    </div>
-  </div>
+    <div class="swiper mySwiper">
+        <div class="swiper-wrapper" id="swiper-wrapper-id">
+            </div>
+        </div>
 
-  <!-- Swiper JS -->
-  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
-  <!-- Initialize Swiper -->
-  <script>
-    var swiper = new Swiper(".mySwiper", {});
-  </script>
-</body>
+    <script>
+        // ----------------------------------------------------
+        // [1] 환경 설정 및 전역 변수
+        // ----------------------------------------------------
+        const CLOUDINARY_CLOUD_NAME = 'dbmdkatry'; // ⭐️ 사용자의 Cloud Name
+        const CLOUDINARY_BASE_URL = `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/`;
+
+        const JSON_FILE_PATH = 'photos.json';
+        let globalSwiper = null; // ⭐️ Swiper 인스턴스 참조를 위해 다시 추가 ⭐️
+
+
+        // ----------------------------------------------------
+        // [2] 함수 정의 영역
+        // ----------------------------------------------------
+
+        /** Swiper 라이브러리를 초기화하는 함수 */
+        function initializeSwiper() {
+            if (globalSwiper) {
+                globalSwiper.destroy(true, true);
+            }
+
+            globalSwiper = new Swiper(".mySwiper", { // HTML의 .mySwiper 클래스 사용
+                loop: false,
+                slidesPerView: 1,
+                spaceBetween: 0,
+
+                // 모바일 스와이프 충돌 방지를 위한 설정 (이전에 문제 해결에 도움을 줬던 설정)
+                allowTouchMove: true,
+                touchMoveStopPropagation: true,
+                resistance: false,
+
+                // 페이지네이션 및 네비게이션이 필요한 경우 여기에 추가
+
+            });
+        }
+
+        /** 파일명 문자열을 분석하는 함수 (간단 버전) */
+        function parseFilename(filename) {
+            if (typeof filename !== 'string' || filename.length === 0) {
+                console.error("파일명 데이터가 유효하지 않습니다:", filename);
+                return null;
+            }
+            return { filename: filename };
+        }
+
+        /** 파일 목록을 기반으로 Swiper 슬라이드 HTML을 생성하고 삽입하는 함수 */
+        function generateSwiperSlides(filenames) { // 함수명 변경 (MediaList -> SwiperSlides)
+            const swiperWrapper = document.getElementById('swiper-wrapper-id');
+            let slidesHTML = '';
+
+            filenames.forEach(filename => {
+                const data = parseFilename(filename);
+
+                if (data) {
+                    const isVideo = filename.toLowerCase().endsWith('.webm');
+
+                    // Cloudinary URL 생성
+                    const resourceType = isVideo ? 'video' : 'image';
+                    const imagePath = `${CLOUDINARY_BASE_URL}${resourceType}/upload/v1/${filename}`;
+
+                    let mediaTag;
+
+                    if (isVideo) {
+                        // controls만 유지하여 자동 재생 방지
+                        mediaTag = `
+                            <video src="${imagePath}"
+                                   alt="${filename}"
+                                   controls
+                                   preload="metadata"
+                                   style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                                Your browser does not support the video tag.
+                            </video>
+                        `;
+                    } else {
+                        // 이미지 태그
+                        mediaTag = `
+                            <img src="${imagePath}"
+                                 alt="${filename}"
+                                 style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                        `;
+                    }
+
+                    // ⭐️ <div class="swiper-slide"> 클래스 사용 (Swiper 필수) ⭐️
+                    const slideHTML = `
+                        <div class="swiper-slide">
+                            ${mediaTag}
+                        </div>
+                    `;
+                    slidesHTML += slideHTML;
+                }
+            });
+
+            swiperWrapper.innerHTML = slidesHTML;
+        }
+
+
+        // ----------------------------------------------------
+        // [3] 메인 실행 로직 영역
+        // ----------------------------------------------------
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const loadingIndicator = document.getElementById('swiper-wrapper-id');
+            // 로딩 중 메시지
+            loadingIndicator.innerHTML = `
+                <div class="loading-message">
+                    <p>데이터 로딩 중...</p>
+                </div>`;
+
+
+            fetch(JSON_FILE_PATH)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(loadedFilenames => {
+                    if (Array.isArray(loadedFilenames) && loadedFilenames.length > 0) {
+
+                        // 1. Swiper 슬라이드 HTML 생성
+                        generateSwiperSlides(loadedFilenames);
+
+                        // 2. ⭐️ 슬라이드가 DOM에 추가된 후에 Swiper를 초기화 ⭐️
+                        initializeSwiper();
+
+                    } else {
+                        console.error("JSON 파일에 유효한 파일명 배열이 없거나 비어 있습니다.");
+                        loadingIndicator.innerHTML = '<div class="loading-message" style="color:red;">오류: JSON 파일이 비어 있습니다.</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error("JSON 파일 로딩 중 오류 발생:", error);
+                    loadingIndicator.innerHTML =
+                        `<div class="loading-message" style="color:red; padding: 20px; max-width: 80%;">
+                            데이터 로드 실패: ${error.message}
+                            <p style="font-size: 0.8em; margin-top: 10px; color: #ccc;">(photos.json 경로 또는 Cloudinary Public ID 확인 필요)</p>
+                        </div>`;
+                });
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+    </body>
 
 </html>
