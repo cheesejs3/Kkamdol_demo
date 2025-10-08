@@ -10,13 +10,13 @@
     <title></title>
     <style>
         *{margin:0}
-        html, body {
-    /* 모바일에서 오버스크롤/바운스 효과를 제거하여 새로고침 방지 */
-    overscroll-behavior-y: none;
-    /* iOS의 탄성 스크롤을 비활성화 (선택 사항이나 권장) */
-    -webkit-overflow-scrolling: auto; 
-    overflow: hidden; /* 전체 스크롤을 방지하여 Swiper 슬라이드에 집중 */
-}
+       html, body {
+        height: 100%;
+        width: 100%;
+        /* 🔥!important로 다른 스타일이 이 설정을 덮어쓰지 못하게 강제 */
+        overflow: hidden !important; 
+        overscroll-behavior: none !important; 
+        }
         img, video {width: 100%;
             height: 100%;
             object-fit: contain;}
@@ -128,30 +128,30 @@
         };
     }
 
-/** Swiper 라이브러리를 초기화하는 함수 (수정) */
+/** Swiper 라이브러리를 초기화하는 함수 */
 function initializeSwiper(initialIndex = 0) {
     if (globalSwiper) {
         globalSwiper.destroy(true, true);
     }
     
     globalSwiper = new Swiper('.swiper', {
-        loop: false,
+        loop: false, 
         slidesPerView: 1,
         spaceBetween: 30,
         allowTouchMove: true,
         initialSlide: initialIndex,
         
-        // ⭐️⭐️⭐️ 가장 중요한 수정: 터치 시작 시 기본 동작 방지 ⭐️⭐️⭐️
-        // (1) 터치 시작 시 브라우저의 기본 동작 (스크롤, 새로고침 등)을 막습니다.
+        // ⭐️⭐️⭐️ JS 설정 재확인 ⭐️⭐️⭐️
+        // 1. 터치 시작 시 브라우저의 기본 동작을 강제로 막음
         touchStartPreventDefault: true, 
 
-        // (2) 수직 스크롤은 허용하고 수평은 Swiper가 처리하도록 지정
-        touchAction: 'pan-y', 
+        // 2. CSS와 일치시키기 위해 pan-y 대신 pan-x 사용 (수직 스크롤을 완전히 포기)
+        touchAction: 'pan-x', 
         
-        // (3) 터치 이벤트 전파 중지 (이전/다음 요소로 이벤트가 번지는 것을 막음)
+        // 3. 이벤트 전파 중지
         touchMoveStopPropagation: true, 
         
-        // (4) 끝 부분에서 당기는 저항을 제거
+        // 4. 저항 제거
         resistance: false,
     });
 }
