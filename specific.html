@@ -7,42 +7,59 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.css"/>
     <script src="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.js"></script>
 
-    <title></title>
+    <title>갤갤갤..</title>
     <style>
     * { margin: 0; box-sizing: border-box; }
     
-    /* ⭐️⭐️⭐️ 최종 해결책: 뷰포트 완전 고정 (position: fixed) 유지 ⭐️⭐️⭐️ */
     html, body {
+        /* ⭐️ 최종 방어 유지: 뷰포트 고정 및 스크롤 방지 ⭐️ */
         height: 100% !important; 
         width: 100% !important;
-        position: fixed; /* 브라우저 스크롤 레이어와 DOM 분리 */
+        
+        /* 뷰포트 자체 고정 유지 */
+        position: fixed; 
         top: 0;
         left: 0;
+        
         overscroll-behavior: none !important;
         overflow: hidden !important;         
     }
 
-    /* ⭐️ Swiper JS 전용 컨테이너 ⭐️ */
+    /* ⭐️ Swiper JS 컨테이너: 터치 기능 삭제, 스크롤 스냅 도입 ⭐️ */
     .swiper {
         width: 100vw;
         height: 100vh;      /* 폴백: 구형 브라우저 */
-        min-height: 100svh; /* iOS 안정화 (유지) */
+        min-height: 100svh; /* iOS 안정화 */
         background-color: black;
         
-        /* ⭐️⭐️⭐️ 사파리 터치 강제 잠금 (유지) ⭐️⭐️⭐️ */
-        touch-action: none !important;
-        overscroll-behavior: contain; 
+        /* 🔥★★★★★ 최종 해결책 ★★★★★🔥 */
+        /* 브라우저에게 수평 스크롤 권한을 주고, 터치-액션을 끄지 않아 충돌 회피 */
+        overflow-x: scroll !important;
+        overflow-y: hidden !important;
+        scroll-snap-type: x mandatory; 
         
-        cursor: grab;
-        -webkit-touch-callout: none; /* iOS 롱탭 메뉴 방지 */
+        /* iOS 안정화 */
+        -webkit-overflow-scrolling: touch; 
+        
+        /* touch-action:none을 제거하여 브라우저의 터치 동작 허용 */
+        touch-action: pan-x !important; 
     }
     
-    /* ⭐️ 슬라이드 래퍼 및 개별 슬라이드 (유지) ⭐️ */
+    /* ⭐️ Swiper 래퍼: 가로로 길게 늘리고, 스크롤바 숨김 ⭐️ */
     .swiper-wrapper {
         display: flex; 
         height: 100%; 
+        width: max-content; /* 슬라이드 개수만큼 가로 길이 자동 확장 */
+        
+        /* 스크롤바 숨김 */
+        -ms-overflow-style: none; /* IE and Edge */
+        scrollbar-width: none; /* Firefox */
+    }
+    .swiper-wrapper::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Opera */
     }
     
+    /* ⭐️ 개별 슬라이드: 스냅 지점 지정 ⭐️ */
     .swiper-slide {
         width: 100vw; 
         height: 100%; 
@@ -50,14 +67,16 @@
         align-items: center; 
         justify-content: center;
         flex-shrink: 0; 
-        padding: 0 16px; /* 엣지 스와이프 히트존 감소 (유지) */
+        padding: 0 16px; 
+        
+        /* 🔥★★★★★ 슬라이드마다 스냅 지점 지정 ★★★★★🔥 */
+        scroll-snap-align: start; 
     }
     
     img, video {
         width: 100%;
         height: 100%;
         object-fit: contain;
-        /* 드래그, 긴눌림 메뉴 방지 (유지) */
         -webkit-user-drag: none;
         user-select: none;
     }
@@ -142,80 +161,71 @@
         };
     }
 
-    function initializeSwiper(initialIndex = 0) {
-        if (globalSwiper) {
-            globalSwiper.destroy(true, true);
-        }
+    // initializeSwiper 함수 내부만 아래처럼 수정합니다.
+function initializeSwiper(initialIndex = 0) {
+    if (globalSwiper) {
+        globalSwiper.destroy(true, true);
+    }
+    
+    globalSwiper = new Swiper('.swiper', {
+        loop: false, 
+        slidesPerView: 1,
+        spaceBetween: 0, // Scroll-Snap 모드에서는 spaceBetween 제거
         
-        globalSwiper = new Swiper('.swiper', {
-            loop: false, 
-            slidesPerView: 1,
-            spaceBetween: 30,
-            allowTouchMove: true,
+        // 🔥★★★★★ 최종 해결책: Swiper 터치 기능 완전 비활성화 ★★★★★🔥
+        allowTouchMove: false,         // Swiper의 터치 이동 자체를 막음
+        
+        // 터치 관련 옵션 모두 제거 (passiveListeners, touchStartPreventDefault 등)
+        
+        initialSlide: initialIndex,
+        speed: 0, // 애니메이션 속도도 0으로 (브라우저 스크롤 스냅에 맡김)
+        
+        observer: true, 
+        observeParents: true,
+        
+        resistance: false,
+        edgeSwipeDetection: false, // 이제 브라우저가 처리
+        
+        // PC 마우스휠 스크롤 비활성화 (스크롤바 생김 방지)
+        mousewheel: false,
+        
+        // 🔥★★★★★ Scroll-Snap과 연동: 스크롤 이벤트 감지 ★★★★★🔥
+        // Scroll-Snap은 자동으로 스크롤 포지션을 변경하므로,
+        // Swiper는 이 변경을 관찰하여 activeIndex를 업데이트만 합니다.
+        // **실제 슬라이드 이동은 브라우저가 합니다.**
+        on: {
+            // ... (기존 비디오 처리 로직 유지) ...
             
-            // ⭐️⭐️⭐️ JS 기반의 터치 제어권 강제 확보 옵션 유지 ⭐️⭐️⭐️
-            touchStartPreventDefault: true, 
-            touchMoveStopPropagation: true, 
-            passiveListeners: false,        
-            
-            initialSlide: initialIndex,
-            
-            speed: 800, 
-            
-            observer: true, 
-            observeParents: true,
-            
-            resistance: false,
-
-            // 엣지 스와이프 억제 옵션 (유지)
-            edgeSwipeDetection: true,      
-            edgeSwipeThreshold: 30, 
-
-            // PC 마우스휠 스크롤 안정화 (유지)
-            mousewheel: {
-                sensitivity: 1.0,
-                eventsTarget: '.swiper'
-            },
-            
-            on: {
-                // ⭐️⭐️⭐️ 최종 수정: Swiper의 터치 시작 이벤트에서 브라우저 이벤트를 강제 차단 ⭐️⭐️⭐️
-                touchstart: function (swiper, event) {
-                    // 이벤트 객체가 존재하고 preventDefault 메소드가 있으면 실행
-                    if (event && event.preventDefault) {
-                         event.preventDefault(); 
-                         event.stopPropagation();
-                    }
-                },
-                
-                slideChangeTransitionStart: function () {
-                    this.slides.forEach(slide => {
-                        const video = slide.querySelector('video');
-                        if (video) {
-                            video.pause();
-                        }
-                    });
-                },
-                slideChangeTransitionEnd: function () {
-                    const activeSlide = this.slides[this.activeIndex];
-                    const video = activeSlide.querySelector('video');
+            // ⭐️ 스크롤이 끝난 후 activeSlide를 업데이트하는 기능만 사용 ⭐️
+            slideChangeTransitionStart: function () {
+                this.slides.forEach(slide => {
+                    const video = slide.querySelector('video');
                     if (video) {
-                        if (video.readyState >= 3) { 
-                            video.play().catch(e => console.log("Video Play Error (Ready):", e));
-                        } else {
-                            video.addEventListener('canplay', function playOnce() {
-                                this.play().catch(e => console.log("Video Play Error (CanPlay):", e));
-                                this.removeEventListener('canplay', playOnce); 
-                            }, { once: true });
-                            
-                            if (video.networkState === 0 /* NETWORK_EMPTY */ || video.networkState === 3 /* NETWORK_NO_SOURCE */) {
-                                video.load(); 
-                            }
+                        video.pause();
+                    }
+                });
+            },
+            slideChangeTransitionEnd: function () {
+                const activeSlide = this.slides[this.activeIndex];
+                const video = activeSlide.querySelector('video');
+                if (video) {
+                    if (video.readyState >= 3) { 
+                        video.play().catch(e => console.log("Video Play Error (Ready):", e));
+                    } else {
+                        video.addEventListener('canplay', function playOnce() {
+                            this.play().catch(e => console.log("Video Play Error (CanPlay):", e));
+                            this.removeEventListener('canplay', playOnce); 
+                        }, { once: true });
+                        
+                        if (video.networkState === 0 /* NETWORK_EMPTY */ || video.networkState === 3 /* NETWORK_NO_SOURCE */) {
+                            video.load(); 
                         }
                     }
                 }
             }
-        });
-    }
+        }
+    });
+}
 
     /** 파일 목록을 기반으로 Swiper 슬라이드 HTML을 생성하고 삽입하는 함수 */
     function generateSwiperSlides(filenames) {
