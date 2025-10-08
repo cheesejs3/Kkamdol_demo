@@ -91,7 +91,7 @@
     let globalSwiper = null; 
 
     // ----------------------------------------------------
-    // [2] 함수 정의 영역 (경로 처리 로직 수정) ⭐️⭐️⭐️
+    // [2] 함수 정의 영역 (initializeSwiper 수정)
     // ----------------------------------------------------
 
     /** URL에서 'date' 쿼리 파라미터를 추출하는 함수 */
@@ -154,6 +154,9 @@
             allowTouchMove: true,
             initialSlide: initialIndex,
             
+            // ⭐️⭐️⭐️ 수정: 트랜지션 속도를 늦춰 미디어 로드 시간 확보 ⭐️⭐️⭐️
+            speed: 800, 
+            
             observer: true, 
             observeParents: true,
             
@@ -171,6 +174,9 @@
                     });
                 },
                 slideChangeTransitionEnd: function () {
+                    // ⭐️⭐️⭐️ 수정: 슬라이드가 바뀔 때마다 Swiper 뷰 강제 업데이트 ⭐️⭐️⭐️
+                    this.update(); 
+                    
                     const activeSlide = this.slides[this.activeIndex];
                     const video = activeSlide.querySelector('video');
                     if (video) {
@@ -201,7 +207,6 @@
             const data = parseFilename(filename);
 
             if (data) {
-                // ⭐️⭐️⭐️ 파일 확장자에 따라 리소스 타입 동적 결정 ⭐️⭐️⭐️
                 const isVideo = filename.toLowerCase().endsWith('.webm') || filename.toLowerCase().endsWith('.mp4');
                 const resourceType = isVideo ? 'video' : 'image'; 
                 
@@ -210,7 +215,6 @@
                 let mediaTag;
 
                 if (isVideo) {
-                    // 비디오 파일의 확장자를 제거하고 JPG로 포스터 요청
                     const posterFilename = filename.replace(/\.[^/.]+$/, '.jpg'); 
                     const posterPath = `${CLOUDINARY_BASE_URL}video/upload/f_jpg/${posterFilename}`;
                     
@@ -227,7 +231,6 @@
                         </video>
                     `;
                 } else {
-                    // 이미지 태그 (image/upload 경로 사용)
                     mediaTag = `
                         <img src="${imagePath}"  
                              alt="${data.date} - ${data.locationSubcategory}"
