@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.css"/>
     <script src="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.js"></script>
 
-    <title>갤러리최종</title>
+    <title>갤러리</title>
     <style>
     * { margin: 0; box-sizing: border-box; }
     
@@ -15,7 +15,7 @@
         height: 100%;
         width: 100%;
         
-        /* ⭐️⭐️⭐️ 최종 방어선: 스크롤 원천 봉쇄 ⭐️⭐️⭐️ */
+        /* ⭐️⭐️⭐️ 최종 방어선: 스크롤/새로고침 원천 봉쇄 ⭐️⭐️⭐️ */
         overscroll-behavior: none !important; /* 브라우저 새로고침/바운스 최종 차단 */
         overflow: hidden !important;         /* 수직 스크롤을 완전히 막아 새로고침 방지 */
     }
@@ -24,13 +24,16 @@
     .swiper {
         width: 100vw;
         height: 100vh;      /* 폴백: 구형 브라우저 */
-        min-height: 100svh; /* ⭐️ iOS 안정화 (유지) */
+        min-height: 100svh; /* iOS 안정화 (유지) */
         background-color: black;
         
-        /* ⭐️⭐️⭐️ 최종 터치 잠금: Swiper 외 모든 터치 동작을 무시 ⭐️⭐️⭐️ */
+        /* ⭐️⭐️⭐️ 사파리 터치 강제 잠금 ⭐️⭐️⭐️ */
         touch-action: none !important;
-        /* 컨테이너 내부 스크롤 바운스 흡수는 touch-action:none 에 포함됨 */
         overscroll-behavior: contain; 
+        
+        /* 사파리 추가 보강 */
+        cursor: grab;
+        -webkit-touch-callout: none; /* iOS 롱탭 메뉴 방지 */
     }
     
     /* ⭐️ 슬라이드 래퍼 및 개별 슬라이드 (유지) ⭐️ */
