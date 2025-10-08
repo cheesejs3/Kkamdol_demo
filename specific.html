@@ -9,45 +9,51 @@
 
     <title></title>
     <style>
-        *{margin:0}
-       html, body {
+    *{margin:0}
+    
+    /* ⭐️⭐️⭐️ 터치 안정화를 위한 높이 설정 강제 ⭐️⭐️⭐️ */
+    html, body {
         height: 100%;
         width: 100%;
-        /* 🔥!important로 다른 스타일이 이 설정을 덮어쓰지 못하게 강제 */
         overflow: hidden !important; 
-        overscroll-behavior: none !important; 
-        }
-        img, video {width: 100%;
-            height: 100%;
-            object-fit: contain;}
-        .swiper{
-            width:100vw;
-            height: 100vh;
-            background-color: black;
-        }
-        .swiper-wrapper{}
-        .swiper-slide{
-            display: flex;
-            align-items: center; /* Vertically centers children */
-            justify-content: center; /* Horizontally centers children (optional) */
-            height: 100vh;
-        }
-        /* 로딩바 CSS 제거 (이제 사용하지 않음) */
-        
-        .info-overlay{
-            color:white;
-            position: fixed;
-            top:0;
-            left: 0;
-            /* 정보창은 필요할 때만 토글할 수 있도록 display: none을 유지 */
-            display: none; 
-            padding: 10px;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 10;
-        }
-
-        
-    </style>
+        overscroll-behavior: none !important; /* 새로고침 방지 */
+    }
+    
+    img, video {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+    
+    .swiper{
+        width:100vw;
+        height: 100vh;
+        background-color: black;
+        /* Swiper의 터치 액션을 수평으로 명시적으로 고정 */
+        touch-action: pan-x; 
+    }
+    /* 🔥 이 두 요소에 height: 100%를 명시하여 계산 오류 방지 */
+    .swiper-wrapper{
+        height: 100%; 
+    }
+    .swiper-slide{
+        display: flex;
+        align-items: center; 
+        justify-content: center; 
+        height: 100%; /* vh 대신 100%를 사용하여 부모 wrapper 높이를 따르도록 강제 */
+    }
+    
+    .info-overlay{
+        color:white;
+        position: fixed;
+        top:0;
+        left: 0;
+        display: none; 
+        padding: 10px;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 10;
+    }
+</style>
 </head>
 <body>
     <div class="swiper swiper-container">
