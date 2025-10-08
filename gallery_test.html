@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, black-translucent">
+	<link href="https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/variable/woff2/SUIT-Variable.css" rel="stylesheet">
+	<title></title>
+	<style>
+		*{margin: 0;
+		font-family: 'SUIT Variable', sans-serif;}
+
+		body{ width:100vw;
+			height: 100vh;
+			background-image: linear-gradient(-2deg, #a29990 -20%, #dfd9d8 30%);
+			background-attachment: fixed;}
+
+		 #calendar-grid {
+            display: grid;
+            /* 한 줄에 7개의 동일한 크기 열 생성 */
+            grid-template-columns: repeat(7, 1fr); 
+            gap: 5px; /* 칸 간격 */
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 10px;
+            padding-top: calc(env(safe-area-inset-top) + 30px + 3em);
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        #year-grid{
+        	box-sizing: border-box;
+        	position: fixed;
+        	z-index: 100;
+        	display: grid;
+        	grid-template-columns: repeat(5, 1fr); 
+        	max-width: 800px;
+        	width: 100%;
+        	padding-top: calc(env(safe-area-inset-top) + 10px );
+        	padding-left:10px;
+        	padding-right: 10px;
+        	font-weight: 400;
+        	font-size:1em;
+        	letter-spacing: -0.018em;
+        	top: 30px;
+  			left: 50%;
+  			transform: translate(-50%, -50%);
+        }
+        #year-grid > div {
+        	padding:10px 15px;
+        	margin: 0 auto;
+        	align-items: center;
+            justify-content: center;
+            border-radius: 30rem;
+            background-color: rgba(244, 244, 244, 0.5);
+            box-shadow: inset 0 0 0.3rem rgba(244, 244, 244, 0.8);
+            backdrop-filter: blur(3px);
+        }
+
+        .calendar-cell {
+            overflow: hidden;
+            /* 날짜 칸의 기본 스타일 */
+            aspect-ratio: 1/1;
+            border: 1px solid #ddd;
+            border-radius: 20%;
+            display: flex; /* 내용을 중앙에 배치 */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center; /* 내용을 칸 중앙에 배치 */
+            padding: 5px;
+            box-sizing: border-box;
+            font-size: 14px;
+            position: relative;
+            
+        }
+        
+        .date-number {
+            font-weight: bold;
+            font-size: 1.2em;
+            /* 날짜만 표시할 때는 배경색을 투명하게 하거나 제거 */
+        }
+
+
+        
+        .empty-cell {
+            background-color: transparent; 
+            border: none;
+        }
+
+
+        .year-color-0 { } /* 연한 하늘색 */
+        .year-color-1 { background-color: #fce4ec; } /* 연한 분홍색 */
+        .year-color-2 { background-color: #fffde7; } /* 연한 노란색 */
+        .year-color-3 { background-color: #e8f5e9; } /* 연한 녹색 */
+        .year-color-4 { background-color: #ede7f6; } /* 연한 보라색 */
+        .month-separator {
+            /* ✨ 월 구분자: 1칸만 차지하며, 연속된 흐름에 삽입됩니다. */
+            /* grid-column: 1 / span 7; 속성을 제거하여 1칸만 차지하도록 합니다. */
+            box-shadow: inset 0 0 0.3rem rgba(244, 244, 244, 0.8);
+            
+            background-color: unset;
+            color: white;
+            font-size: 1.74em;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    
+    </style>
+</head>
+<body>
+	<div id="year-grid">
+		<div id="btn2021">2021</div>
+		<div id="btn2022">2022</div>
+		<div id="btn2023">2023</div>
+		<div id="btn2024">2024</div>
+		<div id="btn2025">2025</div>
+	</div>
+    <div id="calendar-grid">
+    </div>
+
+<script>
+    // 1. 데이터 생성 함수 (변경 없음)
+    function generateContiguousCalendarItems(startDateStr, endDateStr) {
+        // ... (기존 generateContiguousCalendarItems 함수 내용) ...
+        const startDate = new Date(startDateStr);
+        const endDate = new Date(endDateStr);
+        const calendarItems = [];
+        
+        let currentDate = new Date(startDate);
+        let currentMonth = startDate.getMonth();
+        let currentYear = startDate.getFullYear();
+
+        const startYear = startDate.getFullYear();
+        
+        while (currentDate <= endDate) {
+            const date = currentDate.getDate();
+            const month = currentDate.getMonth();
+            const year = currentDate.getFullYear();
+            
+            const colorIndex = (year - startYear) % 5; 
+            
+            if (date === 1 && (month !== currentMonth || year !== currentYear)) {
+                calendarItems.push({ 
+                    type: 'month', 
+                    value: `${month + 1}`,
+                    year: year,
+                    colorIndex: colorIndex
+                });
+                
+                currentMonth = month;
+                currentYear = year;
+            }
+
+            calendarItems.push({
+                type: 'day',
+                value: date,
+                fullDate: currentDate.toISOString().split('T')[0],
+                year: year,
+                colorIndex: colorIndex
+            });
+
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        
+        while (calendarItems.length % 7 !== 0) {
+             calendarItems.push({ type: 'empty' });
+        }
+        
+        return calendarItems;
+    }
+
+    // 2. 썸네일 로드 함수 (변경 없음)
+    function loadThumbnail(cellElement, dateStr) {
+        const thumbnailPath = `thumb/${dateStr}.webp`; 
+        fetch(thumbnailPath, { method: 'HEAD' })
+            .then(response => {
+                if (response.ok) {
+                    const img = document.createElement('img');
+                    img.src = thumbnailPath;
+                    img.alt = `${dateStr} 썸네일`;
+                    
+                    img.style.width = '100%';
+                    img.style.height = '100%';
+                    img.style.objectFit = 'cover'; 
+                    img.style.position = 'absolute';
+                    img.style.top = '0';
+                    img.style.left = '0';
+                    
+                    cellElement.appendChild(img);
+                    
+                    // ⭐️ 썸네일 로드 시 날짜 번호의 z-index를 설정하여 위에 보이게 함 ⭐️
+                    const dateNumber = cellElement.querySelector('.date-number');
+                    
+                }
+            })
+            .catch(error => {
+                console.error(`썸네일 로드 중 오류 발생 (${thumbnailPath}):`, error);
+            });
+    }
+
+    // 3. 렌더링 함수 (수정 반영)
+    function renderCalendar() {
+        const START_DATE = '2021-04-25';
+        const END_DATE = '2025-09-22';
+        const TARGET_PAGE_URL = 'specific.html' 
+        const calendarData = generateContiguousCalendarItems(START_DATE, END_DATE);
+        const gridContainer = document.getElementById('calendar-grid');
+        
+        calendarData.forEach(item => {
+            const cell = document.createElement('div');
+            cell.className = 'calendar-cell'; 
+            
+            if (item.type !== 'empty') {
+                cell.className += ` year-color-${item.colorIndex}`;
+            }
+
+            if (item.type === 'month') {
+                cell.className += ' month-separator'; 
+                cell.textContent = item.value;
+                gridContainer.appendChild(cell);
+            } else if (item.type === 'empty') {
+                cell.className += ' empty-cell';
+                gridContainer.appendChild(cell);
+            } else { // item.type === 'day' (날짜 셀)
+                
+                const link = document.createElement('a');
+                link.href = `${TARGET_PAGE_URL}?date=${item.fullDate}`; 
+                link.className = 'date-day-link'; 
+
+                cell.className += ' date-day';
+                cell.style.position = 'relative'; 
+                cell.dataset.fullDate = item.fullDate;
+                
+                // 날짜 번호 생성 및 <div> 셀에 추가 (loadThumbnail에서 참조함)
+               
+               
+                loadThumbnail(cell, item.fullDate);
+                
+                // <div> 셀을 <a> 링크 안에 넣습니다.
+                link.appendChild(cell);
+
+                // 그리드에 최종적으로 <a> 링크를 추가합니다.
+                gridContainer.appendChild(link);
+                
+                return; 
+            }
+        });
+        
+        // ⭐️ 렌더링이 완료된 후 스크롤 버튼 설정 함수 호출 ⭐️
+        setupScrollButtons(); 
+    }
+
+    // 4. 스크롤 버튼 통합 설정 함수
+    function setupScrollButtons() {
+        // rem 단위를 픽셀로 변환하는 함수 (중복 제거)
+        function remToPx(rem) {
+            return rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
+        }
+        
+        // 고정된 헤더 높이만큼 오프셋 설정
+        const offsetPx = remToPx(4); 
+        
+        // 년도별 버튼과 해당 클래스를 매핑
+        const yearButtons = [
+            { id: 'btn2021', colorIndex: 0 },
+            { id: 'btn2022', colorIndex: 1 },
+            { id: 'btn2023', colorIndex: 2 },
+            { id: 'btn2024', colorIndex: 3 },
+            { id: 'btn2025', colorIndex: 4 }
+        ];
+
+        yearButtons.forEach(btn => {
+            const buttonElement = document.getElementById(btn.id);
+            const targetClass = `.year-color-${btn.colorIndex}`;
+
+            if (buttonElement) {
+                buttonElement.addEventListener('click', () => {
+                    // 해당 년도의 첫 번째 날짜 셀을 목표로 설정
+                    const targetDiv = document.querySelector(targetClass); 
+
+                    if (targetDiv) {
+                        const targetRect = targetDiv.getBoundingClientRect(); 
+                        const absoluteTop = targetRect.top + window.scrollY;
+                        // 오프셋을 적용하여 목표 요소가 4rem 아래에 위치하도록 스크롤
+                        const scrollToPosition = absoluteTop - offsetPx;
+                        
+                        window.scrollTo({
+                            top: scrollToPosition,
+                            behavior: 'smooth' 
+                        });
+                    }
+                });
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', renderCalendar);
+</script>
+</body>
+</html>

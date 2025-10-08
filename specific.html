@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.js"></script>
+
+    <title></title>
+    <style>
+        *{margin:0}
+        img, video {width: 100%;
+            height: 100%;
+            object-fit: contain;}
+        .swiper{
+            width:100vw;
+            height: 100vh;
+            background-color: black;
+        }
+        .swiper-wrapper{}
+        .swiper-slide{
+            display: flex;
+            align-items: center; /* Vertically centers children */
+            justify-content: center; /* Horizontally centers children (optional) */
+            height: 100vh;
+        }
+        /* 로딩바 CSS 제거 (이제 사용하지 않음) */
+        
+        .info-overlay{
+            color:white;
+            position: fixed;
+            top:0;
+            left: 0;
+            /* 정보창은 필요할 때만 토글할 수 있도록 display: none을 유지 */
+            display: none; 
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 10;
+        }
+
+        
+    </style>
+</head>
+<body>
+    <div class="swiper swiper-container">
+        <div class="swiper-wrapper" id="swiper-wrapper-id">
+             </div>
+
+    </div>
+    
+
+<script>
+    // ----------------------------------------------------
+    // [1] 환경 설정 (Cloudinary 정보)
+    // ----------------------------------------------------
+    const CLOUDINARY_CLOUD_NAME = 'dbmdkatry'; // ⭐️ 사용자의 Cloud Name
+    const CLOUDINARY_BASE_URL = `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/`;
+    
+    const JSON_FILE_PATH = 'photos.json'; 
+    //새로 생성된 Swiper 객체를 이 변수에 저장하여, 이제부터 스크립트의 어느 곳에서든 globalSwiper.slideNext() 등으로 슬라이더를 제어할 수 있게 됩니다.
+    let globalSwiper = null; 
+
+    // ----------------------------------------------------
+    // [2] 함수 정의 영역
+    // ----------------------------------------------------
+
+    /** URL에서 'date' 쿼리 파라미터를 추출하는 함수 */
+    function getInitialDateFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('date'); 
+
+    }
+
+    /** 파일명 문자열을 분석하여 데이터 객체로 변환하는 함수 */
+    function parseFilename(filename) {
+        if (typeof filename !== 'string' || filename.length === 0) {
+            console.error("파일명 데이터가 유효하지 않습니다:", filename);
+            return null;
+        }
+
+        // 파일명에서 확장자를 제외한 부분만 추출
+        const basename = filename.substring(0, filename.lastIndexOf('.'));
+        const parts = basename.split('_');
+
+        if (parts.length < 5) {
+            console.error("파일명 형식이 올바르지 않습니다:", filename);
+            return null;
+        }
+
+        const [datePart, timePart, locationPart, peoplePart, actionPart] = parts;
+        
+        let time;
+        if (timePart.length === 2) {
+            time = `${timePart}:00:00`;
+        } else if (timePart.length === 6) {
+            time = `${timePart.substring(0, 2)}:${timePart.substring(2, 4)}:${timePart.substring(4, 6)}`;
+        } else {
+            time = timePart; 
+        }
+
+        const locationSplit = locationPart.split('-');
+        const locationSubcategory = locationSplit.length > 1 ? locationSplit[1] : locationSplit[0];
+
+        const people = peoplePart.split('-').join(', ');
+
+        const actionSplit = actionPart.split('-');
+        const action = actionSplit[0] || 'N/A';
+        const emotion = actionSplit[1] || 'N/A';
+        const situation = actionSplit[2] || 'N/A';
+
+        return {
+            filename: filename,
+            date: datePart,
+            time: time,
+            locationSubcategory: locationSubcategory,
+            people: people,
+            action: action,
+            emotion: emotion,
+            situation: situation
+        };
+    }
+
+    /** Swiper 라이브러리를 초기화하는 함수 */
+    function initializeSwiper(initialIndex = 0) {
+        if (globalSwiper) {
+            globalSwiper.destroy(true, true);
+        }
+        
+        globalSwiper = new Swiper('.swiper', {
+            loop: false, // ⭐️ 무한 반복 비활성화 (모바일 오류 방지) ⭐️
+            slidesPerView: 1,
+            spaceBetween: 30,
+            allowTouchMove: true,
+            initialSlide: initialIndex,
+            
+
+            
+            // ⭐️ 비디오 재생/정지 이벤트 핸들러 완전히 제거 ⭐️
+        });
+    }
+
+    /** 파일 목록을 기반으로 Swiper 슬라이드 HTML을 생성하고 삽입하는 함수 */
+    function generateSwiperSlides(filenames) {
+        const swiperWrapper = document.getElementById('swiper-wrapper-id');
+        let swiperSlidesHTML = '';
+
+        filenames.forEach(filename => {
+            const data = parseFilename(filename);
+
+            if (data) {
+                const isVideo = filename.toLowerCase().endsWith('.webm');
+                
+                // Cloudinary URL 생성: v1을 추가하여 캐시 문제 방지
+                const resourceType = isVideo ? 'video' : 'image';
+                const imagePath = `${CLOUDINARY_BASE_URL}${resourceType}/upload/v1/${filename}`; // v1/ 추가
+                
+                let mediaTag;
+
+                if (isVideo) {
+                    // ⭐️ <video> 태그: autoplay 속성을 직접 추가하여 브라우저가 제어하도록 위임 ⭐️
+                    mediaTag = `
+                        <video src="${imagePath}" 
+                               alt="${data.date} - ${data.locationSubcategory}" 
+                               controls 
+                               muted 
+                               loop 
+                               autoplay 
+                               playsinline
+                               preload="metadata"
+                               style="width: 100%; height: 100%; object-fit: contain;">
+                            Your browser does not support the video tag.
+                        </video>
+                    `;
+                } else {
+                    // <img> 태그: src 직접 사용
+                    mediaTag = `
+                        <img src="${imagePath}" 
+                             alt="${data.date} - ${data.locationSubcategory}"
+                             style="width: 100%; height: 100%; object-fit: contain;">
+                    `;
+                }
+
+                const slideHTML = `
+                    <div class="swiper-slide">
+                        ${mediaTag} 
+                        <div class="info-overlay">
+                            <p><strong>날짜</strong>: ${data.date}</p>
+                            <p><strong>시간</strong>: ${data.time}</p>
+                            <p><strong>장소</strong>: ${data.locationSubcategory}</p>
+                            <p><strong>사람</strong>: ${data.people}</p>
+                            <p><strong>행동</strong>: ${data.action}</p>
+                            <p><strong>감정</strong>: ${data.emotion}</p>
+                            <p><strong>상황</strong>: ${data.situation}</p>
+                        </div>
+                    </div>
+                `;
+                swiperSlidesHTML += slideHTML;
+            }
+        });
+
+        swiperWrapper.innerHTML = swiperSlidesHTML;
+    }
+
+
+    // ----------------------------------------------------
+    // [3] 메인 실행 로직 영역
+    // ----------------------------------------------------
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const loadingIndicator = document.getElementById('swiper-wrapper-id');
+        loadingIndicator.innerHTML = `
+            <div class="swiper-slide" style="color:white; font-size: 20px; display:flex; justify-content:center; align-items:center;">
+                <p>데이터 로딩 중...</p>
+            </div>`;
+
+
+        fetch(JSON_FILE_PATH)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(loadedFilenames => {
+                if (Array.isArray(loadedFilenames) && loadedFilenames.length > 0) {
+                    
+                    const initialDate = getInitialDateFromUrl(); 
+                    let initialIndex = 0; 
+
+                    if (initialDate) {
+                        const firstMatchingIndex = loadedFilenames.findIndex(filename => {
+                            return filename.substring(0, 10) === initialDate;
+                        });
+                        
+                        if (firstMatchingIndex !== -1) {
+                            initialIndex = firstMatchingIndex;
+                        }
+                    }
+
+                    // 1. 슬라이드 HTML 생성
+                    generateSwiperSlides(loadedFilenames);
+                    
+                    // 2. Swiper 초기화
+                    initializeSwiper(initialIndex);
+                    
+                } else {
+                    console.error("JSON 파일에 유효한 파일명 배열이 없거나 비어 있습니다.");
+                    loadingIndicator.innerHTML = '<div class="swiper-slide" style="color:red; font-size: 20px;">오류: JSON 파일이 비어 있습니다.</div>';
+                }
+            })
+            .catch(error => {
+                console.error("JSON 파일 로딩 중 오류 발생:", error);
+                loadingIndicator.innerHTML = 
+                    `<div class="swiper-slide" style="color:red; font-size: 20px; padding: 20px; text-align: center;">
+                        데이터 로드 실패: ${error.message}
+                        <p style="font-size: 0.8em; margin-top: 10px;">(Cloudinary Public ID, ` + JSON_FILE_PATH + ` 경로 확인 필요)</p>
+                    </div>`;
+            });
+    });
+</script>
+</body>
+</html>
