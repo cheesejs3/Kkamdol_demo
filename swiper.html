@@ -59,24 +59,176 @@
 </head>
 
 <body>
-<div class="swiper mySwiper">
-    <div class="swiper-wrapper" id="swiper-wrapper-id">
-        <div class="swiper-slide" style="background: red;">테스트 1</div>
-        <div class="swiper-slide" style="background: blue;">테스트 2</div>
-        <div class="swiper-slide" style="background: green;">테스트 3</div>
+    <div class="swiper mySwiper">
+        <div class="swiper-wrapper" id="swiper-wrapper-id">
+            </div>
         </div>
-    <div class="swiper-button-next"></div>
-    <div class="swiper-button-prev"></div>
-</div>
 
-<script>
-    // ... (모든 fetch() 로직 및 generateSwiperSlides() 호출 제거)
-    
-    document.addEventListener('DOMContentLoaded', () => {
-        // ⭐️ 데이터 로드 없이, DOMContentLoaded 직후 Swiper만 초기화 ⭐️
-        initializeSwiper(); 
-    });
-</script>
+
+    <script>
+        // ----------------------------------------------------
+        // [1] 환경 설정 및 전역 변수
+        // ----------------------------------------------------
+        const CLOUDINARY_CLOUD_NAME = 'dbmdkatry'; // ⭐️ 사용자의 Cloud Name
+        const CLOUDINARY_BASE_URL = `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/`;
+
+        const JSON_FILE_PATH = 'photos.json';
+        let globalSwiper = null; // ⭐️ Swiper 인스턴스 참조를 위해 다시 추가 ⭐️
+
+
+        // ----------------------------------------------------
+        // [2] 함수 정의 영역
+        // ----------------------------------------------------
+
+        // ... (이전 코드 생략)
+
+        function initializeSwiper() {
+            if (globalSwiper) {
+                globalSwiper.destroy(true, true);
+            }
+            
+            globalSwiper = new Swiper(".mySwiper", { 
+                loop: false,
+                slidesPerView: 1,
+                spaceBetween: 0,
+                
+                // ⭐️⭐️⭐️ 모바일 충돌 방지 "최강 옵션" ⭐️⭐️⭐️
+                
+                // 1. 터치 시작 시 브라우저의 기본 동작(새로고침, 스크롤) 무조건 차단
+                touchStartPreventDefault: true, 
+                
+                // 2. 터치 이벤트가 브라우저로 전파되는 것을 막아 새로고침 방지
+                touchMoveStopPropagation: true,
+                
+                // 3. CSS 대신 JS로 수직 스크롤 허용 및 수평 스와이프 우선 처리 지시
+                touchAction: 'pan-y', // Swiper가 수직 스크롤(pan-y)을 허용하며, 수평은 Swiper가 처리함
+                
+                // 4. 스와이프 시 탄력(저항) 효과 제거
+                resistance: false,
+                
+                // 5. 버튼이 작동하도록 네비게이션 옵션 명시
+                navigation: {
+                    nextEl: '.swiper-button-next',
+                    prevEl: '.swiper-button-prev',
+                },
+                
+                // ⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️
+
+                // 페이지네이션 (선택 사항)
+                pagination: {
+                    el: '.swiper-pagination',
+                    clickable: true,
+                },
+            });
+        }
+
+        /** 파일명 문자열을 분석하는 함수 (간단 버전) */
+        function parseFilename(filename) {
+            if (typeof filename !== 'string' || filename.length === 0) {
+                console.error("파일명 데이터가 유효하지 않습니다:", filename);
+                return null;
+            }
+            return { filename: filename };
+        }
+
+        /** 파일 목록을 기반으로 Swiper 슬라이드 HTML을 생성하고 삽입하는 함수 */
+        function generateSwiperSlides(filenames) { // 함수명 변경 (MediaList -> SwiperSlides)
+            const swiperWrapper = document.getElementById('swiper-wrapper-id');
+            let slidesHTML = '';
+
+            filenames.forEach(filename => {
+                const data = parseFilename(filename);
+
+                if (data) {
+                    const isVideo = filename.toLowerCase().endsWith('.webm');
+
+                    // Cloudinary URL 생성
+                    const resourceType = isVideo ? 'video' : 'image';
+                    const imagePath = `${CLOUDINARY_BASE_URL}${resourceType}/upload/v1/${filename}`;
+
+                    let mediaTag;
+
+                    if (isVideo) {
+                        // controls만 유지하여 자동 재생 방지
+                        mediaTag = `
+                            <video src="${imagePath}"
+                                   alt="${filename}"
+                                   controls
+                                   preload="metadata"
+                                   style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                                Your browser does not support the video tag.
+                            </video>
+                        `;
+                    } else {
+                        // 이미지 태그
+                        mediaTag = `
+                            <img src="${imagePath}"
+                                 alt="${filename}"
+                                 style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                        `;
+                    }
+
+                    // ⭐️ <div class="swiper-slide"> 클래스 사용 (Swiper 필수) ⭐️
+                    const slideHTML = `
+                        <div class="swiper-slide">
+                            ${mediaTag}
+                        </div>
+                    `;
+                    slidesHTML += slideHTML;
+                }
+            });
+
+            swiperWrapper.innerHTML = slidesHTML;
+        }
+
+
+        // ----------------------------------------------------
+        // [3] 메인 실행 로직 영역
+        // ----------------------------------------------------
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const loadingIndicator = document.getElementById('swiper-wrapper-id');
+            // 로딩 중 메시지
+            loadingIndicator.innerHTML = `
+                <div class="loading-message">
+                    <p>데이터 로딩 중...</p>
+                </div>`;
+
+
+            fetch(JSON_FILE_PATH)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(loadedFilenames => {
+                    if (Array.isArray(loadedFilenames) && loadedFilenames.length > 0) {
+
+                        // 1. Swiper 슬라이드 HTML 생성
+                        generateSwiperSlides(loadedFilenames);
+
+                        // 2. ⭐️ 슬라이드가 DOM에 추가된 후에 Swiper를 초기화 ⭐️
+                        initializeSwiper();
+
+                    } else {
+                        console.error("JSON 파일에 유효한 파일명 배열이 없거나 비어 있습니다.");
+                        loadingIndicator.innerHTML = '<div class="loading-message" style="color:red;">오류: JSON 파일이 비어 있습니다.</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error("JSON 파일 로딩 중 오류 발생:", error);
+                    loadingIndicator.innerHTML =
+                        `<div class="loading-message" style="color:red; padding: 20px; max-width: 80%;">
+                            데이터 로드 실패: ${error.message}
+                            <p style="font-size: 0.8em; margin-top: 10px; color: #ccc;">(photos.json 경로 또는 Cloudinary Public ID 확인 필요)</p>
+                        </div>`;
+                });
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
     </body>
 
 </html>
