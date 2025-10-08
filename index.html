@@ -258,16 +258,7 @@
                 
             } else if (item.type === 'day') { 
                 
-                const dateNumberDiv = document.createElement('div');
-                dateNumberDiv.className = 'date-number';
-                dateNumberDiv.textContent = item.value;
-                dateNumberDiv.style.zIndex = '2'; 
-                cell.appendChild(dateNumberDiv);
                 
-                cell.className += ' date-day';
-                cell.style.position = 'relative'; 
-                cell.dataset.fullDate = item.fullDate;
-
                 let elementToAppend = cell;
 
                 if (item.hasThumbnail) { 
