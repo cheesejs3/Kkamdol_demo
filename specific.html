@@ -10,6 +10,13 @@
     <title></title>
     <style>
         *{margin:0}
+        html, body {
+    /* 모바일에서 오버스크롤/바운스 효과를 제거하여 새로고침 방지 */
+    overscroll-behavior-y: none;
+    /* iOS의 탄성 스크롤을 비활성화 (선택 사항이나 권장) */
+    -webkit-overflow-scrolling: auto; 
+    overflow: hidden; /* 전체 스크롤을 방지하여 Swiper 슬라이드에 집중 */
+}
         img, video {width: 100%;
             height: 100%;
             object-fit: contain;}
@@ -121,7 +128,7 @@
         };
     }
 
-    /** Swiper 라이브러리를 초기화하는 함수 */
+/** Swiper 라이브러리를 초기화하는 함수 (수정) */
 function initializeSwiper(initialIndex = 0) {
     if (globalSwiper) {
         globalSwiper.destroy(true, true);
@@ -134,22 +141,18 @@ function initializeSwiper(initialIndex = 0) {
         allowTouchMove: true,
         initialSlide: initialIndex,
         
-        // ⭐️⭐️⭐️ 문제 해결 핵심: 모바일 터치 안정화 옵션 추가 ⭐️⭐️⭐️
-        // 1. touchAction: 'pan-y'
-        //    수직 스크롤은 브라우저 기본 동작으로 처리하도록 허용하고, 수평 스와이프만 Swiper가 처리하게 합니다.
-        touchAction: 'pan-y',
-        
-        // 2. touchMoveStopPropagation: true
-        //    Swiper가 슬라이드를 이동시키기 위해 터치 이벤트를 처리한 후, 해당 이벤트가 부모 요소로 전달되는 것을 방지합니다.
-        touchMoveStopPropagation: true,
+        // ⭐️⭐️⭐️ 가장 중요한 수정: 터치 시작 시 기본 동작 방지 ⭐️⭐️⭐️
+        // (1) 터치 시작 시 브라우저의 기본 동작 (스크롤, 새로고침 등)을 막습니다.
+        touchStartPreventDefault: true, 
 
-        // 3. resistance: false
-        //    슬라이드의 끝에서 당기는 효과(저항)를 제거하여, 스와이프가 느려지는 현상이나 의도치 않은 터치 동작을 줄입니다.
+        // (2) 수직 스크롤은 허용하고 수평은 Swiper가 처리하도록 지정
+        touchAction: 'pan-y', 
+        
+        // (3) 터치 이벤트 전파 중지 (이전/다음 요소로 이벤트가 번지는 것을 막음)
+        touchMoveStopPropagation: true, 
+        
+        // (4) 끝 부분에서 당기는 저항을 제거
         resistance: false,
-
-        // 4. touchStartPreventDefault: false (기본값)
-        //    미디어 요소(비디오 등)의 상호작용을 위해 기본 동작 방지는 비활성화 상태를 유지합니다.
-        
     });
 }
 
