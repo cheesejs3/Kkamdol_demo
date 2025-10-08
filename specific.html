@@ -153,7 +153,7 @@
                 
                 // Cloudinary URL 생성: v1을 추가하여 캐시 문제 방지
                 const resourceType = isVideo ? 'video' : 'image';
-                const imagePath = `${CLOUDINARY_BASE_URL}${resourceType}/upload/${filename}`; // v1/ 추가
+                const imagePath = `${CLOUDINARY_BASE_URL}${resourceType}/upload/${filename}?cb=1`; // v1/ 추가
                 
                 let mediaTag;
 
