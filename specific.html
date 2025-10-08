@@ -11,57 +11,52 @@
     <style>
     * { margin: 0; box-sizing: border-box; }
     
-    /* ⭐️⭐️⭐️ 브라우저 새로고침 방지 (필수 유지) ⭐️⭐️⭐️ */
+    /* ⭐️⭐️⭐️ 브라우저 새로고침 및 스크롤 방지 ⭐️⭐️⭐️ */
     html, body {
         height: 100%;
         width: 100%;
         overflow: hidden !important; 
-
         overscroll-behavior: none !important;
     }
 
-    /* ⭐️ 순수 CSS 스크롤 스냅 컨테이너 ⭐️ */
+    /* ⭐️ Swiper JS 전용 컨테이너 ⭐️ */
     .swiper {
         width: 100vw;
         height: 100vh;
         background-color: black;
         
-        /* 🔥 가장 중요: 스크롤 모드를 수평으로 설정하고 스냅을 강제 */
-        overflow-x: scroll;
-        overflow-y: hidden; /* 수직 스크롤 방지 */
-        scroll-snap-type: x mandatory; /* 수평 스크롤 스냅 강제 */
-        
-        /* iOS 환경 안정화 (선택 사항) */
-        -webkit-overflow-scrolling: touch; 
+        /* 🔥 충돌 속성 제거 및 Swiper에 제어권 위임 */
+        overflow: hidden; /* Swiper 컨테이너는 오버플로우 숨김 처리 */
+        touch-action: none !important; /* 모바일 터치 안정화 (새로고침 방지) */
     }
     
     /* ⭐️ 슬라이드 래퍼 ⭐️ */
     .swiper-wrapper {
-        display: flex; /* 슬라이드를 가로로 나열 */
-        width: max-content; /* 모든 슬라이드가 차지하는 총 너비 */
-        height: 100%;
+        display: flex; 
+        /* 🔥 충돌 속성 제거: width: max-content; */
+        height: 100%; 
     }
     
     /* ⭐️ 개별 슬라이드 ⭐️ */
     .swiper-slide {
-        /* 뷰포트 너비만큼 각 슬라이드 너비를 설정 */
+        /* Swiper JS가 너비를 처리하도록 width: 100vw를 유지 */
         width: 100vw; 
-        height: 100vh;
+        /* 100%로 설정하여 height: 100vh 충돌 제거 */
+        height: 100%; 
         
-        /* 🔥 가장 중요: 각 슬라이드가 스크롤 스냅 지점이 되도록 설정 */
-        scroll-snap-align: center; 
+        /* 🔥 충돌 속성 제거: scroll-snap-align: center; */
         
-        /* 내부 이미지/비디오 중앙 정렬 */
         display: flex;
         align-items: center; 
         justify-content: center;
-        flex-shrink: 0; /* 슬라이드가 줄어들지 않도록 방지 */
+        flex-shrink: 0; 
     }
     
     img, video {
         width: 100%;
         height: 100%;
         object-fit: contain;
+        touch-action: none !important; /* 미디어 요소 터치 안정화 */
     }
     
     .info-overlay{
@@ -93,7 +88,6 @@
     const CLOUDINARY_BASE_URL = `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/`;
     
     const JSON_FILE_PATH = 'photos.json'; 
-    //새로 생성된 Swiper 객체를 이 변수에 저장하여, 이제부터 스크립트의 어느 곳에서든 globalSwiper.slideNext() 등으로 슬라이더를 제어할 수 있게 됩니다.
     let globalSwiper = null; 
 
     // ----------------------------------------------------
@@ -104,7 +98,6 @@
     function getInitialDateFromUrl() {
         const urlParams = new URLSearchParams(window.location.search);
         return urlParams.get('date'); 
-
     }
 
     /** 파일명 문자열을 분석하여 데이터 객체로 변환하는 함수 */
@@ -113,18 +106,13 @@
             console.error("파일명 데이터가 유효하지 않습니다:", filename);
             return null;
         }
-
-        // 파일명에서 확장자를 제외한 부분만 추출
         const basename = filename.substring(0, filename.lastIndexOf('.'));
         const parts = basename.split('_');
-
         if (parts.length < 5) {
             console.error("파일명 형식이 올바르지 않습니다:", filename);
             return null;
         }
-
         const [datePart, timePart, locationPart, peoplePart, actionPart] = parts;
-        
         let time;
         if (timePart.length === 2) {
             time = `${timePart}:00:00`;
@@ -133,12 +121,9 @@
         } else {
             time = timePart; 
         }
-
         const locationSplit = locationPart.split('-');
         const locationSubcategory = locationSplit.length > 1 ? locationSplit[1] : locationSplit[0];
-
         const people = peoplePart.split('-').join(', ');
-
         const actionSplit = actionPart.split('-');
         const action = actionSplit[0] || 'N/A';
         const emotion = actionSplit[1] || 'N/A';
@@ -156,109 +141,101 @@
         };
     }
 
-/** Swiper 라이브러리를 초기화하는 함수 */
-function initializeSwiper(initialIndex = 0) {
-    if (globalSwiper) {
-        globalSwiper.destroy(true, true);
-    }
-    
-    globalSwiper = new Swiper('.swiper', {
-        loop: false, 
-        slidesPerView: 1,
-        spaceBetween: 30,
-        allowTouchMove: true,
-        initialSlide: initialIndex,
+    /** Swiper 라이브러리를 초기화하는 함수 */
+    function initializeSwiper(initialIndex = 0) {
+        if (globalSwiper) {
+            globalSwiper.destroy(true, true);
+        }
         
-        // ⭐️⭐️⭐️ 메모리 관리를 위한 Lazy Loading 옵션 (핵심) ⭐️⭐️⭐️
-        lazy: {
-            loadPrevNext: true, // 이전/다음 슬라이드를 로드
-            loadPrevNextAmount: 1, // 로드할 슬라이드 개수를 1개로 제한하여 메모리 사용 최소화
-            loadOnTransitionStart: true,
-        },
-        
-        // ⭐️ 터치 안정화 옵션 유지 ⭐️
-        touchStartPreventDefault: true, 
-        touchMoveStopPropagation: true, 
-        resistance: false,
+        globalSwiper = new Swiper('.swiper', {
+            loop: false, 
+            slidesPerView: 1,
+            spaceBetween: 30,
+            allowTouchMove: true,
+            initialSlide: initialIndex,
+            
+            // 🔥 지연 로딩 옵션 완전히 제거
+            // lazy: { ... }
 
-        // ⭐️⭐️⭐️ 비디오 재생/정지 이벤트 추가 (핵심) ⭐️⭐️⭐️
-        on: {
-            slideChangeTransitionStart: function () {
-                // 모든 슬라이드의 비디오를 일시정지하고 시간을 0으로 리셋
-                this.slides.forEach(slide => {
-                    const video = slide.querySelector('video');
+            // Observer 옵션 유지
+            observer: true, 
+            observeParents: true,
+            
+            // 터치 안정화 옵션 유지
+            touchStartPreventDefault: true, 
+            touchMoveStopPropagation: true, 
+            resistance: false,
+
+            // 비디오 재생/정지 이벤트 유지
+            on: {
+                slideChangeTransitionStart: function () {
+                    this.slides.forEach(slide => {
+                        const video = slide.querySelector('video');
+                        if (video) {
+                            video.pause();
+                        }
+                    });
+                },
+                slideChangeTransitionEnd: function () {
+                    const activeSlide = this.slides[this.activeIndex];
+                    const video = activeSlide.querySelector('video');
                     if (video) {
-                        video.pause();
-                        // video.currentTime = 0; // 선택 사항: 메모리 해제에 도움
-                    }
-                });
-            },
-            slideChangeTransitionEnd: function () {
-                // 현재 활성 슬라이드의 비디오만 재생 시도
-                const activeSlide = this.slides[this.activeIndex];
-                const video = activeSlide.querySelector('video');
-                if (video) {
-                    // ⭐️⭐️⭐️ 비디오 준비 완료 후 재생 시도 ⭐️⭐️⭐️
-                    // 브라우저에게 미디어 로드가 완료될 때까지 기다리라고 명시적으로 알려줍니다.
-                    
-                    if (video.readyState >= 3) { // 3은 HAVE_FUTURE_DATA를 의미 (재생할 준비가 된 상태)
-                        video.play().catch(e => console.log("Video Play Error (Ready):", e));
-                    } else {
-                        // 아직 로드되지 않았다면, canplay 이벤트가 발생하면 재생하도록 리스너를 붙입니다.
-                        video.addEventListener('canplay', function playOnce() {
-                            this.play().catch(e => console.log("Video Play Error (CanPlay):", e));
-                            this.removeEventListener('canplay', playOnce); // 한 번만 실행되도록 리스너 제거
-                        });
+                        if (video.readyState >= 3) { 
+                            video.play().catch(e => console.log("Video Play Error (Ready):", e));
+                        } else {
+                            video.addEventListener('canplay', function playOnce() {
+                                this.play().catch(e => console.log("Video Play Error (CanPlay):", e));
+                                this.removeEventListener('canplay', playOnce); 
+                            });
+                        }
                     }
                 }
             }
-        }
-    });
-}
+        });
+    }
 
     /** 파일 목록을 기반으로 Swiper 슬라이드 HTML을 생성하고 삽입하는 함수 */
-function generateSwiperSlides(filenames) {
-    const swiperWrapper = document.getElementById('swiper-wrapper-id');
-    let swiperSlidesHTML = '';
+    function generateSwiperSlides(filenames) {
+        const swiperWrapper = document.getElementById('swiper-wrapper-id');
+        let swiperSlidesHTML = '';
 
-    filenames.forEach(filename => {
-        const data = parseFilename(filename);
+        filenames.forEach(filename => {
+            const data = parseFilename(filename);
 
-        if (data) {
-            const isVideo = filename.toLowerCase().endsWith('.webm');
-            
-            // Cloudinary URL 생성: ?cb=1 (Cache Buster) 유지
-            const resourceType = isVideo ? 'video' : 'image';
-            const imagePath = `${CLOUDINARY_BASE_URL}${resourceType}/upload/${filename}?cb=1`; 
-            
-            let mediaTag;
+            if (data) {
+                const isVideo = filename.toLowerCase().endsWith('.webm');
+                
+                const resourceType = isVideo ? 'video' : 'image';
+                const imagePath = `${CLOUDINARY_BASE_URL}${resourceType}/upload/${filename}?cb=1`; 
+                
+                let mediaTag;
 
-            if (isVideo) {
-                // ⭐️⭐️⭐️ data-src와 swiper-lazy 클래스 재사용 (핵심) ⭐️⭐️⭐️
-                mediaTag = `
-                    <video data-src="${imagePath}"  
-                            alt="${data.date} - ${data.locationSubcategory}" 
-                            controls  
-                            muted  
-                            loop 
-                            playsinline
-                            preload="auto" class="swiper-lazy"
-                            style="width: 100%; height: 100%; object-fit: contain;">
-                        Your browser does not support the video tag.
-                    </video>
-                    <div class="swiper-lazy-preloader"></div>
-                `;
-            } else {
-                // <img> 태그도 data-src와 swiper-lazy 클래스 재사용
-                mediaTag = `
-                    <img data-src="${imagePath}"  
-                         alt="${data.date} - ${data.locationSubcategory}"
-                         class="swiper-lazy"
-                         style="width: 100%; height: 100%; object-fit: contain;">
-                    <div class="swiper-lazy-preloader"></div>
-                `;
-            }
-
+                if (isVideo) {
+                    const posterPath = `${CLOUDINARY_BASE_URL}video/upload/${filename.replace('.webm', '.jpg')}`;
+                    
+                    // ⭐️⭐️⭐️ data-src 대신 src 사용 ⭐️⭐️⭐️
+                    mediaTag = `
+                        <video src="${imagePath}"  
+                                alt="${data.date} - ${data.locationSubcategory}" 
+                                controls  
+                                muted  
+                                loop 
+                                playsinline
+                                preload="auto" 
+                                poster="${posterPath}"
+                                style="width: 100%; height: 100%; object-fit: contain;">
+                            Your browser does not support the video tag.
+                        </video>
+                    `;
+                } else {
+                    // ⭐️⭐️⭐️ data-src 대신 src 사용 ⭐️⭐️⭐️
+                    mediaTag = `
+                        <img src="${imagePath}"  
+                             alt="${data.date} - ${data.locationSubcategory}"
+                             style="width: 100%; height: 100%; object-fit: contain;">
+                    `;
+                }
+                
                 const slideHTML = `
                     <div class="swiper-slide">
                         ${mediaTag} 
@@ -321,6 +298,11 @@ function generateSwiperSlides(filenames) {
                     
                     // 2. Swiper 초기화
                     initializeSwiper(initialIndex);
+                    
+                    // ⭐️ Swiper 업데이트 명령만 유지
+                    if (globalSwiper) {
+                        globalSwiper.update(); 
+                    }
                     
                 } else {
                     console.error("JSON 파일에 유효한 파일명 배열이 없거나 비어 있습니다.");
