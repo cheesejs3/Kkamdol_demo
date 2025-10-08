@@ -141,71 +141,66 @@
     }
 
     /** 파일 목록을 기반으로 Swiper 슬라이드 HTML을 생성하고 삽입하는 함수 */
-function generateSwiperSlides(filenames) {
-    const swiperWrapper = document.getElementById('swiper-wrapper-id');
-    let swiperSlidesHTML = '';
+    function generateSwiperSlides(filenames) {
+        const swiperWrapper = document.getElementById('swiper-wrapper-id');
+        let swiperSlidesHTML = '';
 
-    filenames.forEach(filename => {
-        const data = parseFilename(filename);
+        filenames.forEach(filename => {
+            const data = parseFilename(filename);
 
-        if (data) {
-            const isVideo = filename.toLowerCase().endsWith('.webm');
-            
-            // ⭐️⭐️⭐️ 수정된 부분: v1/ 경로를 제거 ⭐️⭐️⭐️
-            // 이렇게 하면 Cloudinary가 자동으로 가장 최신 버전(v1759943527 등)을 찾아 연결합니다.
-            const resourceType = isVideo ? 'video' : 'image';
-            const imagePath = `${CLOUDINARY_BASE_URL}${resourceType}/upload/${filename}`; // v1/ 제거
-            
-            let mediaTag;
+            if (data) {
+                const isVideo = filename.toLowerCase().endsWith('.webm');
+                
+                // Cloudinary URL 생성: v1을 추가하여 캐시 문제 방지
+                const resourceType = isVideo ? 'video' : 'image';
+                const imagePath = `${CLOUDINARY_BASE_URL}${resourceType}/upload/${filename}`; // v1/ 추가
+                
+                let mediaTag;
 
-            if (isVideo) {
-                // data-src와 swiper-lazy 클래스를 사용하여 지연 로딩 설정
-                mediaTag = `
-                    <video data-src="${imagePath}" 
-                            alt="${data.date} - ${data.locationSubcategory}" 
-                            controls 
-                            muted 
-                            loop 
-                            autoplay 
-                            playsinline
-                            preload="metadata"
-                            class="swiper-lazy"
-                            style="width: 100%; height: 100%; object-fit: contain;">
-                        Your browser does not support the video tag.
-                    </video>
-                    <div class="swiper-lazy-preloader"></div>
-                `;
-            } else {
-                // <img> 태그: data-src와 swiper-lazy 클래스 사용
-                mediaTag = `
-                    <img data-src="${imagePath}" 
-                         alt="${data.date} - ${data.locationSubcategory}"
-                         class="swiper-lazy"
-                         style="width: 100%; height: 100%; object-fit: contain;">
-                    <div class="swiper-lazy-preloader"></div>
-                `;
-            }
+                if (isVideo) {
+                    // ⭐️ <video> 태그: autoplay 속성을 직접 추가하여 브라우저가 제어하도록 위임 ⭐️
+                    mediaTag = `
+                        <video src="${imagePath}" 
+                               alt="${data.date} - ${data.locationSubcategory}" 
+                               controls 
+                               muted 
+                               loop 
+                               autoplay 
+                               playsinline
+                               preload="metadata"
+                               style="width: 100%; height: 100%; object-fit: contain;">
+                            Your browser does not support the video tag.
+                        </video>
+                    `;
+                } else {
+                    // <img> 태그: src 직접 사용
+                    mediaTag = `
+                        <img src="${imagePath}" 
+                             alt="${data.date} - ${data.locationSubcategory}"
+                             style="width: 100%; height: 100%; object-fit: contain;">
+                    `;
+                }
 
-            const slideHTML = `
-                <div class="swiper-slide">
-                    ${mediaTag} 
-                    <div class="info-overlay">
-                        <p><strong>날짜</strong>: ${data.date}</p>
-                        <p><strong>시간</strong>: ${data.time}</p>
-                        <p><strong>장소</strong>: ${data.locationSubcategory}</p>
-                        <p><strong>사람</strong>: ${data.people}</p>
-                        <p><strong>행동</strong>: ${data.action}</p>
-                        <p><strong>감정</strong>: ${data.emotion}</p>
-                        <p><strong>상황</strong>: ${data.situation}</p>
+                const slideHTML = `
+                    <div class="swiper-slide">
+                        ${mediaTag} 
+                        <div class="info-overlay">
+                            <p><strong>날짜</strong>: ${data.date}</p>
+                            <p><strong>시간</strong>: ${data.time}</p>
+                            <p><strong>장소</strong>: ${data.locationSubcategory}</p>
+                            <p><strong>사람</strong>: ${data.people}</p>
+                            <p><strong>행동</strong>: ${data.action}</p>
+                            <p><strong>감정</strong>: ${data.emotion}</p>
+                            <p><strong>상황</strong>: ${data.situation}</p>
+                        </div>
                     </div>
-                </div>
-            `;
-            swiperSlidesHTML += slideHTML;
-        }
-    });
+                `;
+                swiperSlidesHTML += slideHTML;
+            }
+        });
 
-    swiperWrapper.innerHTML = swiperSlidesHTML;
-}
+        swiperWrapper.innerHTML = swiperSlidesHTML;
+    }
 
 
     // ----------------------------------------------------
