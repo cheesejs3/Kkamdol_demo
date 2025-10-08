@@ -9,37 +9,59 @@
 
     <title></title>
     <style>
-    *{margin:0}
+    * { margin: 0; box-sizing: border-box; }
     
-    /* ⭐️⭐️⭐️ 모바일 새로고침 방지 핵심 CSS ⭐️⭐️⭐️ */
+    /* ⭐️⭐️⭐️ 브라우저 새로고침 방지 (필수 유지) ⭐️⭐️⭐️ */
     html, body {
         height: 100%;
         width: 100%;
         overflow: hidden !important; 
-        overscroll-behavior: none !important; /* 브라우저 새로고침/바운스 방지 */
+        
+        overscroll-behavior: none !important;
+    }
+
+    /* ⭐️ 순수 CSS 스크롤 스냅 컨테이너 ⭐️ */
+    .swiper {
+        width: 100vw;
+        height: 100vh;
+        background-color: black;
+        
+        /* 🔥 가장 중요: 스크롤 모드를 수평으로 설정하고 스냅을 강제 */
+        overflow-x: scroll;
+        overflow-y: hidden; /* 수직 스크롤 방지 */
+        scroll-snap-type: x mandatory; /* 수평 스크롤 스냅 강제 */
+        
+        /* iOS 환경 안정화 (선택 사항) */
+        -webkit-overflow-scrolling: touch; 
+    }
+    
+    /* ⭐️ 슬라이드 래퍼 ⭐️ */
+    .swiper-wrapper {
+        display: flex; /* 슬라이드를 가로로 나열 */
+        width: max-content; /* 모든 슬라이드가 차지하는 총 너비 */
+        height: 100%;
+    }
+    
+    /* ⭐️ 개별 슬라이드 ⭐️ */
+    .swiper-slide {
+        /* 뷰포트 너비만큼 각 슬라이드 너비를 설정 */
+        width: 100vw; 
+        height: 100vh;
+        
+        /* 🔥 가장 중요: 각 슬라이드가 스크롤 스냅 지점이 되도록 설정 */
+        scroll-snap-align: center; 
+        
+        /* 내부 이미지/비디오 중앙 정렬 */
+        display: flex;
+        align-items: center; 
+        justify-content: center;
+        flex-shrink: 0; /* 슬라이드가 줄어들지 않도록 방지 */
     }
     
     img, video {
         width: 100%;
         height: 100%;
         object-fit: contain;
-    }
-    
-    .swiper{
-        width:100vw;
-        height: 100vh;
-        background-color: black;
-        /* 🔥 가장 강력한 설정: Swiper 영역에서 모든 브라우저 터치 기본 동작(스크롤)을 차단 */
-        touch-action: none !important; 
-    }
-    .swiper-wrapper{
-        height: 100%; 
-    }
-    .swiper-slide{
-        display: flex;
-        align-items: center; 
-        justify-content: center; 
-        height: 100%; /* 100vh 대신 100%를 사용하여 높이 계산 오류 방지 */
     }
     
     .info-overlay{
