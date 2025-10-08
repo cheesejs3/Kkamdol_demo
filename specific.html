@@ -11,12 +11,10 @@
     <style>
     * { margin: 0; box-sizing: border-box; }
     
-    /* ⭐️⭐️⭐️ 브라우저 새로고침 및 스크롤 방지 ⭐️⭐️⭐️ */
+    /* ⭐️⭐️⭐️ 수정: 최소한의 높이/너비만 설정하고, Swiper가 스크롤 제어 ⭐️⭐️⭐️ */
     html, body {
         height: 100%;
         width: 100%;
-        overflow: hidden !important; 
-        overscroll-behavior: none !important;
     }
 
     /* ⭐️ Swiper JS 전용 컨테이너 ⭐️ */
@@ -24,27 +22,18 @@
         width: 100vw;
         height: 100vh;
         background-color: black;
-        
-        /* 🔥 충돌 속성 제거 및 Swiper에 제어권 위임 */
-        overflow: hidden; /* Swiper 컨테이너는 오버플로우 숨김 처리 */
-        touch-action: none !important; /* 모바일 터치 안정화 (새로고침 방지) */
     }
     
     /* ⭐️ 슬라이드 래퍼 ⭐️ */
     .swiper-wrapper {
         display: flex; 
-        /* 🔥 충돌 속성 제거: width: max-content; */
         height: 100%; 
     }
     
     /* ⭐️ 개별 슬라이드 ⭐️ */
     .swiper-slide {
-        /* Swiper JS가 너비를 처리하도록 width: 100vw를 유지 */
         width: 100vw; 
-        /* 100%로 설정하여 height: 100vh 충돌 제거 */
         height: 100%; 
-        
-        /* 🔥 충돌 속성 제거: scroll-snap-align: center; */
         
         display: flex;
         align-items: center; 
@@ -56,7 +45,8 @@
         width: 100%;
         height: 100%;
         object-fit: contain;
-        touch-action: none !important; /* 미디어 요소 터치 안정화 */
+        /* 🔥 최종 수정: 이 충돌 속성을 제거했습니다. */
+        /* touch-action: none !important; */ 
     }
     
     .info-overlay{
@@ -64,7 +54,7 @@
         position: fixed;
         top:0;
         left: 0;
-        display: none; 
+        display: none; 
         padding: 10px;
         background-color: rgba(0, 0, 0, 0.5);
         z-index: 10;
@@ -75,11 +65,9 @@
 <body>
     <div class="swiper swiper-container">
         <div class="swiper-wrapper" id="swiper-wrapper-id">
-             </div>
-
+            </div>
     </div>
     
-
 <script>
     // ----------------------------------------------------
     // [1] 환경 설정 (Cloudinary 정보)
@@ -154,7 +142,7 @@
             allowTouchMove: true,
             initialSlide: initialIndex,
             
-            // ⭐️⭐️⭐️ 수정: 트랜지션 속도를 늦춰 미디어 로드 시간 확보 ⭐️⭐️⭐️
+            // ⭐️ 수정: 트랜지션 속도를 늦춰 미디어 로드 시간 확보 ⭐️
             speed: 800, 
             
             observer: true, 
@@ -174,7 +162,7 @@
                     });
                 },
                 slideChangeTransitionEnd: function () {
-                    // ⭐️⭐️⭐️ 수정: 슬라이드가 바뀔 때마다 Swiper 뷰 강제 업데이트 ⭐️⭐️⭐️
+                    // ⭐️ 수정: 슬라이드가 바뀔 때마다 Swiper 뷰 강제 업데이트 ⭐️
                     this.update(); 
                     
                     const activeSlide = this.slides[this.activeIndex];
@@ -220,7 +208,7 @@
                     
                     mediaTag = `
                         <video src="${imagePath}"  
-                                alt="${data.date} - ${data.locationSubcategory}" 
+                                alt="${data.date} - ${data.locationSubcategory}"  
                                 controls  
                                 muted  
                                 loop 
