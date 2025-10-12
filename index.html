@@ -218,7 +218,7 @@
     async function prepareAndRenderCalendar() {
         // 날짜 범위는 사용자의 실제 데이터에 맞게 조정하세요.
         const START_DATE = '2021-04-25'; 
-        const END_DATE = '2021-07-11';
+        const END_DATE = '2021-07-31';
         const calendarData = generateContiguousCalendarItems(START_DATE, END_DATE);
         
         const preparedDataPromises = calendarData.map(fetchDayData);
